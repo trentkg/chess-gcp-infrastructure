@@ -1,0 +1,5 @@
+*.plan
+*.swp
+*.log
+*cache*
+*terraform.lock.hcl
