@@ -16,7 +16,7 @@ resource "google_storage_bucket_object" "sources-365" {
 
 resource "google_artifact_registry_repository" "chess-artifact-registry" {
   location      = "${var.artifact_registry_location}"
-  repository_id = "chess-artficat-registry-${var.env}"
+  repository_id = "chess-artifact-registry-${var.env}"
   description   = "Docker repository"
   format        = "DOCKER"
 }
