@@ -246,3 +246,28 @@ COMPOSE
   EOT
 }
 
+
+resource "random_password" "es_password" {
+  length           = 32
+  special          = true
+  override_special = "!#$%&*-_=+?" # excludes chars that break shell quoting
+}
+
+resource "google_secret_manager_secret" "es_password" {
+  secret_id = "chess-es-password-${var.env}"
+  project   = var.project_id
+
+  replication {
+    auto {}
+  }
+
+  labels = {
+    env     = var.env
+    service = "elasticsearch"
+  }
+}
+
+resource "google_secret_manager_secret_version" "es_password" {
+  secret      = google_secret_manager_secret.es_password.id
+  secret_data = random_password.es_password.result
+}
