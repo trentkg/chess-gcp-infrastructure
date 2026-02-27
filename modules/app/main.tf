@@ -71,6 +71,21 @@ resource "google_compute_firewall" "beam-to-es" {
   target_tags = ["elasticsearch"]
 }
 
+# Internal VPC → Elasticsearch port 9200 (any service within the subnet)
+resource "google_compute_firewall" "vpc-to-es" {
+  name    = "chess-vpc-to-es-${var.env}"
+  project = var.project_id
+  network = google_compute_network.chess.id
+
+  allow {
+    protocol = "tcp"
+    ports    = ["9200"]
+  }
+
+  source_ranges = [google_compute_subnetwork.chess.ip_cidr_range]
+  target_tags   = ["elasticsearch"]
+}
+
 # IAP SSH into the ES node for debugging
 resource "google_compute_firewall" "iap-ssh" {
   name    = "chess-iap-ssh-${var.env}"
@@ -118,7 +133,7 @@ resource "google_compute_instance" "elasticsearch" {
   name         = "chess-elasticsearch-${var.env}"
   project      = var.project_id
   zone         = var.zone
-  machine_type = "e2-medium"
+  machine_type = "e2-standard-4"
   tags         = ["elasticsearch"]
 
   labels = {
@@ -222,7 +237,7 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - ES_JAVA_OPTS=-Xms4g -Xmx4g
       - cluster.name=chess-${var.env}
       - node.name=chess-es-node
     ulimits:
