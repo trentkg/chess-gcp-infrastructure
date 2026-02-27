@@ -127,6 +127,10 @@ resource "google_compute_disk" "es-data" {
   zone    = var.zone
   type    = "pd-standard"
   size    = 20
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "google_compute_instance" "elasticsearch" {
@@ -182,6 +186,7 @@ resource "google_compute_instance" "elasticsearch" {
     enable_integrity_monitoring = true
   }
 
+  desired_status            = "RUNNING"
   allow_stopping_for_update = true
 
   lifecycle {
