@@ -241,10 +241,10 @@ services:
     restart: unless-stopped
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
-			- xpack.security.enabled=true
+      - xpack.security.enabled=true
+			- xpack.security.transport.ssl.enabled=false
 			- xpack.security.http.ssl.enabled=false   # auth yes, TLS no
-			- ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+			- ELASTIC_PASSWORD=$${ELASTIC_PASSWORD}
       - ES_JAVA_OPTS=-Xms4g -Xmx4g
       - cluster.name=chess-${var.env}
       - node.name=chess-es-node
@@ -362,4 +362,18 @@ resource "google_secret_manager_secret" "es_user" {
 resource "google_secret_manager_secret_version" "es_user" {
   secret      = google_secret_manager_secret.es_user.id
   secret_data = "elastic"
+}
+
+resource "google_compute_firewall" "iap-es" {
+  name    = "chess-iap-es-${var.env}"
+  project = var.project_id
+  network = google_compute_network.chess.id
+
+  allow {
+    protocol = "tcp"
+    ports    = ["9200"]
+  }
+
+  source_ranges = ["35.235.240.0/20"]
+  target_tags   = ["elasticsearch"]
 }
