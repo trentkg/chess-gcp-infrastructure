@@ -242,6 +242,9 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+			- xpack.security.enabled=true
+			- xpack.security.http.ssl.enabled=false   # auth yes, TLS no
+			- ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - ES_JAVA_OPTS=-Xms4g -Xmx4g
       - cluster.name=chess-${var.env}
       - node.name=chess-es-node
@@ -290,4 +293,67 @@ resource "google_secret_manager_secret" "es_password" {
 resource "google_secret_manager_secret_version" "es_password" {
   secret      = google_secret_manager_secret.es_password.id
   secret_data = random_password.es_password.result
+}
+
+resource "google_compute_firewall" "dataflow-internal" {
+  name    = "chess-dataflow-internal-${var.env}"
+  project = var.project_id
+  network = google_compute_network.chess.id
+
+  allow {
+    protocol = "tcp"
+    ports    = ["12345", "12346"]
+  }
+
+  source_tags = ["beam-worker"]
+  target_tags = ["beam-worker"]
+}
+
+resource "google_secret_manager_secret" "es_host" {
+  secret_id = "chess-es-host-${var.env}"
+  project   = var.project_id
+  replication { auto {} }
+}
+
+resource "google_secret_manager_secret_version" "es_host" {
+  secret      = google_secret_manager_secret.es_host.id
+  # The internal IP of your ES instance
+  secret_data = google_compute_instance.elasticsearch.network_interface[0].network_ip
+}
+
+resource "google_service_account" "dataflow_worker" {
+  account_id   = "chess-dataflow-worker-${var.env}"
+  display_name = "Dataflow Worker (${var.env})"
+  project      = var.project_id
+}
+
+resource "google_project_iam_member" "dataflow_worker_roles" {
+  for_each = toset([
+    "roles/dataflow.worker",
+    "roles/storage.objectAdmin",       # read/write GCS staging + PGN files
+    "roles/compute.networkUser",       # attach to your subnet
+    "roles/secretmanager.secretAccessor", # read ES secrets at runtime
+    "roles/artifactregistry.reader",   # pull your transformer Docker image
+  ])
+  project = var.project_id
+  role    = each.value
+  member  = "serviceAccount:${google_service_account.dataflow_worker.email}"
+}
+
+resource "google_secret_manager_secret" "es_ca_cert" {
+  secret_id = "chess-es-ca-cert-${var.env}"
+  project   = var.project_id
+  replication { auto {} }
+}
+
+# The ES user (elastic is the built-in superuser)
+resource "google_secret_manager_secret" "es_user" {
+  secret_id = "chess-es-user-${var.env}"
+  project   = var.project_id
+  replication { auto {} }
+}
+
+resource "google_secret_manager_secret_version" "es_user" {
+  secret      = google_secret_manager_secret.es_user.id
+  secret_data = "elastic"
 }
