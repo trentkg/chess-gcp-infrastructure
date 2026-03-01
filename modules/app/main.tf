@@ -1,21 +1,21 @@
 resource "google_storage_bucket" "chess-games" {
   name          = "chess-games-raw-${var.env}"
   location      = "US"
-  force_destroy = false 
-	project			  = var.project_id
+  force_destroy = false
+  project       = var.project_id
 
   public_access_prevention = "enforced"
 }
 
 resource "google_storage_bucket_object" "sources-365" {
-	depends_on = [google_storage_bucket.chess-games]
-  name   = "sources/365-chess/" # folder name should end with '/'
-  content = " "       # content is ignored but should be non-empty
-  bucket = google_storage_bucket.chess-games.name 
+  depends_on = [google_storage_bucket.chess-games]
+  name       = "sources/365-chess/" # folder name should end with '/'
+  content    = " "                  # content is ignored but should be non-empty
+  bucket     = google_storage_bucket.chess-games.name
 }
 
 resource "google_artifact_registry_repository" "chess-artifact-registry" {
-  location      = "${var.artifact_registry_location}"
+  location      = var.artifact_registry_location
   repository_id = "chess-artifact-registry-${var.env}"
   description   = "Docker repository"
   format        = "DOCKER"
@@ -165,8 +165,8 @@ resource "google_compute_instance" "elasticsearch" {
   }
 
   metadata = {
-    startup-script          = local.es_startup_script
-    block-project-ssh-keys  = "true"
+    startup-script         = local.es_startup_script
+    block-project-ssh-keys = "true"
   }
 
   service_account {
@@ -312,11 +312,13 @@ resource "google_compute_firewall" "dataflow-internal" {
 resource "google_secret_manager_secret" "es_host" {
   secret_id = "chess-es-host-${var.env}"
   project   = var.project_id
-  replication { auto {} }
+  replication {
+    auto {}
+  }
 }
 
 resource "google_secret_manager_secret_version" "es_host" {
-  secret      = google_secret_manager_secret.es_host.id
+  secret = google_secret_manager_secret.es_host.id
   # The internal IP of your ES instance
   secret_data = google_compute_instance.elasticsearch.network_interface[0].network_ip
 }
@@ -330,10 +332,10 @@ resource "google_service_account" "dataflow_worker" {
 resource "google_project_iam_member" "dataflow_worker_roles" {
   for_each = toset([
     "roles/dataflow.worker",
-    "roles/storage.objectAdmin",       # read/write GCS staging + PGN files
-    "roles/compute.networkUser",       # attach to your subnet
+    "roles/storage.objectAdmin",          # read/write GCS staging + PGN files
+    "roles/compute.networkUser",          # attach to your subnet
     "roles/secretmanager.secretAccessor", # read ES secrets at runtime
-    "roles/artifactregistry.reader",   # pull your transformer Docker image
+    "roles/artifactregistry.reader",      # pull your transformer Docker image
   ])
   project = var.project_id
   role    = each.value
@@ -343,14 +345,18 @@ resource "google_project_iam_member" "dataflow_worker_roles" {
 resource "google_secret_manager_secret" "es_ca_cert" {
   secret_id = "chess-es-ca-cert-${var.env}"
   project   = var.project_id
-  replication { auto {} }
+  replication {
+    auto {}
+  }
 }
 
 # The ES user (elastic is the built-in superuser)
 resource "google_secret_manager_secret" "es_user" {
   secret_id = "chess-es-user-${var.env}"
   project   = var.project_id
-  replication { auto {} }
+  replication {
+    auto {}
+  }
 }
 
 resource "google_secret_manager_secret_version" "es_user" {
