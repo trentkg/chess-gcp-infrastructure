@@ -231,8 +231,15 @@ locals {
     sysctl -w vm.max_map_count=262144
     echo "vm.max_map_count=262144" >> /etc/sysctl.conf
 
+    # ── Fetch ES password from Secret Manager ───────────────────────
+    # gcloud is pre-installed on Debian GCE images
+    ELASTIC_PASSWORD=$(gcloud secrets versions access latest \
+      --secret="chess-es-password-${var.env}" \
+      --project="${var.project_id}")
+
     # ── Write docker-compose and start ──────────────────────────────
-    cat > /opt/elasticsearch/docker-compose.yml <<'COMPOSE'
+    mkdir -p /opt/elasticsearch
+    cat > /opt/elasticsearch/docker-compose.yml <<COMPOSE
 version: "3.8"
 services:
   elasticsearch:
@@ -242,9 +249,9 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=true
-			- xpack.security.transport.ssl.enabled=false
-			- xpack.security.http.ssl.enabled=false   # auth yes, TLS no
-			- ELASTIC_PASSWORD=$${ELASTIC_PASSWORD}
+      - xpack.security.transport.ssl.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - ELASTIC_PASSWORD=$ELASTIC_PASSWORD
       - ES_JAVA_OPTS=-Xms4g -Xmx4g
       - cluster.name=chess-${var.env}
       - node.name=chess-es-node
@@ -273,7 +280,7 @@ COMPOSE
 resource "random_password" "es_password" {
   length           = 32
   special          = true
-  override_special = "!#$%&*-_=+?" # excludes chars that break shell quoting
+  override_special = "!#%&*-_=+?"  # removed $ from here
 }
 
 resource "google_secret_manager_secret" "es_password" {
