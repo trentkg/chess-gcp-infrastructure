@@ -377,3 +377,9 @@ resource "google_compute_firewall" "iap-es" {
   source_ranges = ["35.235.240.0/20"]
   target_tags   = ["elasticsearch"]
 }
+
+resource "google_project_iam_member" "es-secret-access" {
+  project = var.project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${google_service_account.elasticsearch.email}"
+}
