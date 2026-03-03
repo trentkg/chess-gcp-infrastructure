@@ -1,3 +1,5 @@
+
+
 resource "google_storage_bucket" "chess-games" {
   name          = "chess-games-raw-${var.env}"
   location      = "US"
@@ -274,6 +276,9 @@ COMPOSE
 
     docker compose -f /opt/elasticsearch/docker-compose.yml up -d
   EOT
+
+	encoder_github_repo = "chess-position-encoder"
+	encoder_github_branch = "main"
 }
 
 
@@ -405,4 +410,64 @@ resource "google_project_iam_member" "es-secret-access" {
   project = var.project_id
   role    = "roles/secretmanager.secretAccessor"
   member  = "serviceAccount:${google_service_account.elasticsearch.email}"
+}
+
+# Allow Cloud Build to push images to GCR / Artifact Registry
+resource "google_project_iam_member" "cloudbuild_storage_admin" {
+  project = var.project_id
+  role    = "roles/storage.admin"
+  member  = "serviceAccount:${var.project_number}@cloudbuild.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "cloudbuild_artifact_registry_writer" {
+  project = var.project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${var.project_number}@cloudbuild.gserviceaccount.com"
+}
+
+# Transformer trigger
+resource "google_cloudbuild_trigger" "transformer" {
+  name        = "transformer-trigger"
+  description = "Trigger build for transformer image"
+  github {
+    owner       = var.github_owner
+    name        = local.encoder_github_repo 
+    push {
+      branch = local.encoder_github_branch 
+    }
+  }
+  filename = "dockerfiles/transformer/cloudbuild.yaml"
+}
+
+# Loader trigger
+resource "google_cloudbuild_trigger" "loader" {
+  name        = "loader-trigger"
+	disabled    = true
+  description = "Trigger build for loader image"
+  github {
+    owner       = var.github_owner
+    name        = local.encoder_github_repo 
+
+    push {
+      branch = local.encoder_github_branch 
+
+    }
+  }
+  filename = "dockerfiles/loader/cloudbuild.yaml"
+}
+
+# Extractor trigger
+resource "google_cloudbuild_trigger" "extractor" {
+  name        = "extractor-trigger"
+	disabled    = true
+  description = "Trigger build for extractor image"
+  github {
+    owner       = var.github_owner
+    name        = local.encoder_github_repo 
+
+    push {
+      branch = local.encoder_github_branch 
+    }
+  }
+  filename = "dockerfiles/extractor/cloudbuild.yaml"
 }

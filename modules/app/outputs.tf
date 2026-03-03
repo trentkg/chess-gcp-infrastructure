@@ -13,3 +13,18 @@ output "iap_tunnel_command" {
   value       = "gcloud compute start-iap-tunnel chess-elasticsearch-${var.env} 9200 --local-host-port=localhost:9200 --zone=${var.zone} --project=${var.project_id}"
 }
 
+output "cloudbuild_trigger_transformer_id" {
+  value = google_cloudbuild_trigger.transformer.id
+}
+
+output "cloudbuild_trigger_loader_id" {
+  value = google_cloudbuild_trigger.loader.id
+}
+
+output "cloudbuild_trigger_extractor_id" {
+  value = google_cloudbuild_trigger.extractor.id
+}
+
+output "cloudbuild_service_account" {
+  value = "${var.project_number}@cloudbuild.gserviceaccount.com"
+}

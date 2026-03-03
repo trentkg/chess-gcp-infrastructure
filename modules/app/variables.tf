@@ -25,3 +25,14 @@ variable "zone" {
   type        = string
   default     = "us-central1-a"
 }
+
+variable "github_owner" {
+  type        = string
+  description = "GitHub owner / org for the repository"
+	default		= "trentkg"
+}
+
+variable "github_repo" {
+  type        = string
+  description = "GitHub repository name for Cloud Build triggers (encoder-github-repo)"
+}
