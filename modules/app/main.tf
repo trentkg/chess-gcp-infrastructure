@@ -336,17 +336,33 @@ resource "google_service_account" "dataflow_worker" {
   project      = var.project_id
 }
 
+
+# Project-level roles
 resource "google_project_iam_member" "dataflow_worker_roles" {
   for_each = toset([
     "roles/dataflow.worker",
-    "roles/storage.objectAdmin",          # read/write GCS staging + PGN files
-    "roles/compute.networkUser",          # attach to your subnet
-    "roles/secretmanager.secretAccessor", # read ES secrets at runtime
-    "roles/artifactregistry.reader",      # pull your transformer Docker image
+    "roles/storage.objectAdmin",
+    "roles/compute.networkUser",
+    "roles/artifactregistry.reader",
   ])
   project = var.project_id
   role    = each.value
   member  = "serviceAccount:${google_service_account.dataflow_worker.email}"
+}
+
+# Secret Manager access for secrets named chess-es-*
+data "google_secret_manager_secrets" "chess_es" {
+  project = var.project_id
+  filter  = "name:chess-es-"
+}
+
+# Give dataflow access to any secret with chess-es- in the name.
+resource "google_secret_manager_secret_iam_member" "chess_es_access" {
+  for_each = { for s in data.google_secret_manager_secrets.chess_es.secrets : s.secret_id => s }
+
+  secret_id = each.value.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.dataflow_worker.email}"
 }
 
 resource "google_secret_manager_secret" "es_ca_cert" {
