@@ -442,6 +442,8 @@ output "cloudbuild_service_account" {
 resource "google_cloudbuild_trigger" "transformer" {
   name        = "transformer-trigger"
   description = "Trigger build for transformer image"
+  project     = var.project_id
+  location    = "global"
   github {
     owner = var.github_owner
     name  = local.encoder_github_repo
@@ -457,6 +459,8 @@ resource "google_cloudbuild_trigger" "loader" {
   name        = "loader-trigger"
   disabled    = true
   description = "Trigger build for loader image"
+  project     = var.project_id
+  location    = "global"
   github {
     owner = var.github_owner
     name  = local.encoder_github_repo
@@ -473,6 +477,8 @@ resource "google_cloudbuild_trigger" "loader" {
 resource "google_cloudbuild_trigger" "extractor" {
   name        = "extractor-trigger"
   disabled    = true
+  project     = var.project_id
+  location    = "global"
   description = "Trigger build for extractor image"
   github {
     owner = var.github_owner
