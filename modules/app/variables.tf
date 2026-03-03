@@ -31,8 +31,3 @@ variable "github_owner" {
   description = "GitHub owner / org for the repository"
   default     = "trentkg"
 }
-
-variable "github_repo" {
-  type        = string
-  description = "GitHub repository name for Cloud Build triggers (encoder-github-repo)"
-}

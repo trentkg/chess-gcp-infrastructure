@@ -24,7 +24,3 @@ output "cloudbuild_trigger_loader_id" {
 output "cloudbuild_trigger_extractor_id" {
   value = google_cloudbuild_trigger.extractor.id
 }
-
-output "cloudbuild_service_account" {
-  value = "${var.project_number}@cloudbuild.gserviceaccount.com"
-}

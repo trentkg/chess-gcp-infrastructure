@@ -412,17 +412,30 @@ resource "google_project_iam_member" "es-secret-access" {
   member  = "serviceAccount:${google_service_account.elasticsearch.email}"
 }
 
-# Allow Cloud Build to push images to GCR / Artifact Registry
+# Create Cloud Build service account
+resource "google_service_account" "cloudbuild" {
+  account_id   = "cloudbuild-${var.env}"
+  display_name = "Cloud Build Service Account (${var.env})"
+  project      = var.project_id
+}
+
+# Grant Storage Admin
 resource "google_project_iam_member" "cloudbuild_storage_admin" {
   project = var.project_id
   role    = "roles/storage.admin"
-  member  = "serviceAccount:${var.project_number}@cloudbuild.gserviceaccount.com"
+  member  = "serviceAccount:${google_service_account.cloudbuild.email}"
 }
 
+# Grant Artifact Registry Writer
 resource "google_project_iam_member" "cloudbuild_artifact_registry_writer" {
   project = var.project_id
   role    = "roles/artifactregistry.writer"
-  member  = "serviceAccount:${var.project_number}@cloudbuild.gserviceaccount.com"
+  member  = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
+# Output the Cloud Build service account email
+output "cloudbuild_service_account" {
+  value = google_service_account.cloudbuild.email
 }
 
 # Transformer trigger
