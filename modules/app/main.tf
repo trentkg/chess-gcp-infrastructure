@@ -277,15 +277,15 @@ COMPOSE
     docker compose -f /opt/elasticsearch/docker-compose.yml up -d
   EOT
 
-	encoder_github_repo = "chess-position-encoder"
-	encoder_github_branch = "main"
+  encoder_github_repo   = "chess-position-encoder"
+  encoder_github_branch = "main"
 }
 
 
 resource "random_password" "es_password" {
   length           = 32
   special          = true
-  override_special = "!#%&*-_=+?"  # removed $ from here
+  override_special = "!#%&*-_=+?" # removed $ from here
 }
 
 resource "google_secret_manager_secret" "es_password" {
@@ -430,10 +430,10 @@ resource "google_cloudbuild_trigger" "transformer" {
   name        = "transformer-trigger"
   description = "Trigger build for transformer image"
   github {
-    owner       = var.github_owner
-    name        = local.encoder_github_repo 
+    owner = var.github_owner
+    name  = local.encoder_github_repo
     push {
-      branch = local.encoder_github_branch 
+      branch = local.encoder_github_branch
     }
   }
   filename = "dockerfiles/transformer/cloudbuild.yaml"
@@ -442,14 +442,14 @@ resource "google_cloudbuild_trigger" "transformer" {
 # Loader trigger
 resource "google_cloudbuild_trigger" "loader" {
   name        = "loader-trigger"
-	disabled    = true
+  disabled    = true
   description = "Trigger build for loader image"
   github {
-    owner       = var.github_owner
-    name        = local.encoder_github_repo 
+    owner = var.github_owner
+    name  = local.encoder_github_repo
 
     push {
-      branch = local.encoder_github_branch 
+      branch = local.encoder_github_branch
 
     }
   }
@@ -459,14 +459,14 @@ resource "google_cloudbuild_trigger" "loader" {
 # Extractor trigger
 resource "google_cloudbuild_trigger" "extractor" {
   name        = "extractor-trigger"
-	disabled    = true
+  disabled    = true
   description = "Trigger build for extractor image"
   github {
-    owner       = var.github_owner
-    name        = local.encoder_github_repo 
+    owner = var.github_owner
+    name  = local.encoder_github_repo
 
     push {
-      branch = local.encoder_github_branch 
+      branch = local.encoder_github_branch
     }
   }
   filename = "dockerfiles/extractor/cloudbuild.yaml"
