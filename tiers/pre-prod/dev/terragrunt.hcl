@@ -15,6 +15,8 @@ terraform {
     source = "../../../modules/app/"
 }
 inputs = {
+    github_app_installation_id = local.env_vars["github_installation_id"]
+    github_oauth_token = get_env("GITHUB_OAUTH_TOKEN")
     env = local.env_vars["env"]
     project_id = local.env_vars["project_id"]
 }

@@ -31,3 +31,14 @@ variable "github_owner" {
   description = "GitHub owner / org for the repository"
   default     = "trentkg"
 }
+
+variable "github_oauth_token" {
+  description = "GitHub Personal Access Token for Cloud Build connection"
+  type        = string
+  sensitive   = true
+}
+
+variable "github_app_installation_id" {
+  description = "GitHub App installation ID for Cloud Build"
+  type        = number
+}
