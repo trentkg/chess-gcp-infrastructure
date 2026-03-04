@@ -42,3 +42,9 @@ variable "github_app_installation_id" {
   description = "GitHub App installation ID for Cloud Build"
   type        = number
 }
+
+variable "es_desired_status" {
+  description = "Desired status of the elasticsearch instance. Either \"RUNNING\", \"SUSPENDED\" or \"TERMINATED\""
+  type        = string
+	default		  = "RUNNING"
+}

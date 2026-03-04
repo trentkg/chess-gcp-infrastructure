@@ -188,7 +188,7 @@ resource "google_compute_instance" "elasticsearch" {
     enable_integrity_monitoring = true
   }
 
-  desired_status            = "RUNNING"
+  desired_status            = var.es_desired_status
   allow_stopping_for_update = true
 
   lifecycle {
