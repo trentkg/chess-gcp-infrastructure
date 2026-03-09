@@ -139,7 +139,7 @@ resource "google_compute_instance" "elasticsearch" {
   name         = "chess-elasticsearch-${var.env}"
   project      = var.project_id
   zone         = var.zone
-  machine_type =  var.es_vm_machine_type
+  machine_type = var.es_vm_machine_type
   tags         = ["elasticsearch"]
 
   labels = {
@@ -210,71 +210,68 @@ locals {
     fi
 
     mkdir -p "$MOUNT_POINT"
-    mount -o discard,defaults "$DATA_DISK" "$MOUNT_POINT"
-    echo "$DATA_DISK $MOUNT_POINT ext4 discard,defaults 0 2" >> /etc/fstab
-    chmod 777 "$MOUNT_POINT"
 
-    # ── Install Docker ───────────────────────────────────────────────
-    apt-get update -y
-    apt-get install -y ca-certificates curl gnupg lsb-release
-    install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/debian/gpg \
-      | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    chmod a+r /etc/apt/keyrings/docker.gpg
-    echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-      https://download.docker.com/linux/debian \
-      $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-      | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    apt-get update -y
-    apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    if ! mountpoint -q "$MOUNT_POINT"; then
+      mount -o discard,defaults "$DATA_DISK" "$MOUNT_POINT"
+    fi
+
+    grep -qF "$DATA_DISK" /etc/fstab || \
+      echo "$DATA_DISK $MOUNT_POINT ext4 discard,defaults 0 2" >> /etc/fstab
+
+    # ── Install Elasticsearch (skip if already installed) ────────────
+    if ! dpkg -l elasticsearch | grep -q '^ii'; then
+      apt-get update -y
+      apt-get install -y apt-transport-https ca-certificates curl gnupg
+
+      curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch \
+        | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
+
+      echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] \
+        https://artifacts.elastic.co/packages/8.x/apt stable main" \
+        | tee /etc/apt/sources.list.d/elastic-8.x.list
+
+      apt-get update -y
+      apt-get install -y elasticsearch=8.13.4
+    fi
 
     # ── Kernel settings required by ES ──────────────────────────────
     sysctl -w vm.max_map_count=262144
-    echo "vm.max_map_count=262144" >> /etc/sysctl.conf
+    grep -qF "vm.max_map_count" /etc/sysctl.conf || \
+      echo "vm.max_map_count=262144" >> /etc/sysctl.conf
 
     # ── Fetch ES password from Secret Manager ───────────────────────
-    # gcloud is pre-installed on Debian GCE images
     ELASTIC_PASSWORD=$(gcloud secrets versions access latest \
       --secret="chess-es-password-${var.env}" \
       --project="${var.project_id}")
 
-    # ── Write docker-compose and start ──────────────────────────────
-    mkdir -p /opt/elasticsearch
-    cat > /opt/elasticsearch/docker-compose.yml <<COMPOSE
-version: "3.8"
-services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
-    container_name: elasticsearch
-    restart: unless-stopped
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=true
-      - xpack.security.transport.ssl.enabled=false
-      - xpack.security.http.ssl.enabled=false
-      - ELASTIC_PASSWORD=$ELASTIC_PASSWORD
-      - ES_JAVA_OPTS=-Xms4g -Xmx4g
-      - cluster.name=chess-${var.env}
-      - node.name=chess-es-node
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - /opt/elasticsearch/data:/usr/share/elasticsearch/data
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-COMPOSE
+    # ── Configure Elasticsearch ──────────────────────────────────────
+    chown -R elasticsearch:elasticsearch "$MOUNT_POINT"
 
-    docker compose -f /opt/elasticsearch/docker-compose.yml up -d
+    cat > /etc/elasticsearch/elasticsearch.yml <<CONFIG
+cluster.name: chess-${var.env}
+node.name: chess-es-node
+path.data: /opt/elasticsearch/data
+path.logs: /var/log/elasticsearch
+network.host: 0.0.0.0
+http.port: 9200
+discovery.type: single-node
+xpack.security.enabled: true
+xpack.security.transport.ssl.enabled: false
+xpack.security.http.ssl.enabled: false
+CONFIG
+
+    # Set heap to 1.5g - safe for e2-medium
+    echo "-Xms1500m" > /etc/elasticsearch/jvm.options.d/heap.options
+    echo "-Xmx1500m" >> /etc/elasticsearch/jvm.options.d/heap.options
+
+    # Set the built-in elastic user password
+    /usr/share/elasticsearch/bin/elasticsearch-reset-password \
+      -u elastic --batch -p "$ELASTIC_PASSWORD"
+
+    # ── Enable and start via systemd ─────────────────────────────────
+    systemctl daemon-reload
+    systemctl enable elasticsearch
+    systemctl start elasticsearch
   EOT
 
   encoder_github_repo   = "chess-position-encoder"

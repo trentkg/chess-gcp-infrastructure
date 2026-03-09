@@ -52,5 +52,5 @@ variable "es_desired_status" {
 variable "es_vm_machine_type" {
   description = "Machine type of the elasticsearch compute instance, e.g. e2-standard-4"
   type        = string
-  default     = "e2-micro"
+  default     = "e2-small"
 }
