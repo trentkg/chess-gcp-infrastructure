@@ -139,7 +139,7 @@ resource "google_compute_instance" "elasticsearch" {
   name         = "chess-elasticsearch-${var.env}"
   project      = var.project_id
   zone         = var.zone
-  machine_type = "e2-standard-4"
+  machine_type =  var.es_vm_machine_type
   tags         = ["elasticsearch"]
 
   labels = {

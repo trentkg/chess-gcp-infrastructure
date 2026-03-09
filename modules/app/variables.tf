@@ -46,5 +46,11 @@ variable "github_app_installation_id" {
 variable "es_desired_status" {
   description = "Desired status of the elasticsearch instance. Either \"RUNNING\", \"SUSPENDED\" or \"TERMINATED\""
   type        = string
-	default		  = "RUNNING"
+  default     = "RUNNING"
+}
+
+variable "es_vm_machine_type" {
+  description = "Machine type of the elasticsearch compute instance, e.g. e2-standard-4"
+  type        = string
+  default     = "e2-micro"
 }
