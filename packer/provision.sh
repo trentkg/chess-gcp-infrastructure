@@ -64,7 +64,11 @@ if ! blkid "$DATA_DISK" | grep -q ext4; then
   mkfs.ext4 -F "$DATA_DISK"
 fi
 
-mount "$DATA_DISK" "$MOUNT_POINT"
+# Only mount if not already mounted — prevents failure on preemptible VM restarts
+if ! mountpoint -q "$MOUNT_POINT"; then
+  mount "$DATA_DISK" "$MOUNT_POINT"
+fi
+
 chown -R elasticsearch:elasticsearch "$MOUNT_POINT"
 chmod 750 "$MOUNT_POINT"
 BOOT
