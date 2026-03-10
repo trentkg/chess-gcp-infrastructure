@@ -4,18 +4,14 @@ set -euxo pipefail
 # ── Install Elasticsearch ────────────────────────────────────────
 apt-get update -y
 apt-get install -y apt-transport-https ca-certificates curl gnupg
-
 curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch \
   | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
-
 echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] \
   https://artifacts.elastic.co/packages/8.x/apt stable main" \
   | tee /etc/apt/sources.list.d/elastic-8.x.list
-
 echo "Package: elasticsearch
 Pin: version 8.13.4
 Pin-Priority: 1001" > /etc/apt/preferences.d/elasticsearch
-
 apt-get update -y
 apt-get install -y elasticsearch=8.13.4
 
@@ -23,15 +19,14 @@ apt-get install -y elasticsearch=8.13.4
 echo "vm.max_map_count=262144" >> /etc/sysctl.conf
 
 # ── Heap size ────────────────────────────────────────────────────
-# Provisioned for an e2 small right now
 echo "-Xms${ES_HEAP_SIZE}" > /etc/elasticsearch/jvm.options.d/heap.options
 echo "-Xmx${ES_HEAP_SIZE}" >> /etc/elasticsearch/jvm.options.d/heap.options
 
 # ── Configure Elasticsearch ──────────────────────────────────────
-# Note: no password or data path here - that happens at boot
 cat > /etc/elasticsearch/elasticsearch.yml <<CONFIG
 node.name: chess-es-node
 path.logs: /var/log/elasticsearch
+path.data: /var/lib/elasticsearch
 network.host: 0.0.0.0
 http.port: 9200
 discovery.type: single-node
@@ -40,5 +35,66 @@ xpack.security.transport.ssl.enabled: false
 xpack.security.http.ssl.enabled: false
 CONFIG
 
+# ── Data directory (placeholder — real mount happens at boot) ────
+mkdir -p /var/lib/elasticsearch
+chown elasticsearch:elasticsearch /var/lib/elasticsearch
+
+# ── Boot-time setup script ───────────────────────────────────────
+cat > /usr/local/bin/es-boot-setup.sh <<'BOOT'
+#!/bin/bash
+set -euo pipefail
+
+DATA_DISK="/dev/disk/by-id/google-es-data"
+MOUNT_POINT="/var/lib/elasticsearch"
+
+# Wait for the data disk to appear (up to 30s)
+for i in $(seq 1 30); do
+  if [ -b "$DATA_DISK" ]; then break; fi
+  echo "Waiting for data disk... ($i)"
+  sleep 1
+done
+
+if [ ! -b "$DATA_DISK" ]; then
+  echo "ERROR: Data disk not found at $DATA_DISK" >&2
+  exit 1
+fi
+
+# Format if this is a fresh disk (no filesystem yet)
+if ! blkid "$DATA_DISK" | grep -q ext4; then
+  mkfs.ext4 -F "$DATA_DISK"
+fi
+
+mount "$DATA_DISK" "$MOUNT_POINT"
+chown -R elasticsearch:elasticsearch "$MOUNT_POINT"
+chmod 750 "$MOUNT_POINT"
+BOOT
+chmod +x /usr/local/bin/es-boot-setup.sh
+
+# ── Systemd unit for boot setup ──────────────────────────────────
+cat > /etc/systemd/system/es-boot-setup.service <<'UNIT'
+[Unit]
+Description=Elasticsearch data disk mount and setup
+Before=elasticsearch.service
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/es-boot-setup.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+# ── Drop-in to make elasticsearch wait for mount ─────────────────
+mkdir -p /etc/systemd/system/elasticsearch.service.d
+cat > /etc/systemd/system/elasticsearch.service.d/wait-for-mount.conf <<'DROP'
+[Unit]
+After=es-boot-setup.service
+Requires=es-boot-setup.service
+DROP
+
+# ── Enable services (do NOT start — disk absent during bake) ─────
 systemctl daemon-reload
+systemctl enable es-boot-setup
 systemctl enable elasticsearch
