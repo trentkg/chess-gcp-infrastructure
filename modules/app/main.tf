@@ -149,7 +149,7 @@ resource "google_compute_instance" "elasticsearch" {
 
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-12"
+      image = "projects/${var.project_id}/global/images/family/chess-elasticsearch"
       size  = 20
       type  = "pd-balanced"
     }
@@ -167,7 +167,7 @@ resource "google_compute_instance" "elasticsearch" {
   }
 
   metadata = {
-    startup-script         = local.es_startup_script
+    #startup-script         = local.es_startup_script
     block-project-ssh-keys = "true"
   }
 
@@ -197,83 +197,6 @@ resource "google_compute_instance" "elasticsearch" {
 }
 
 locals {
-  es_startup_script = <<-EOT
-    #!/bin/bash
-    set -euxo pipefail
-
-    # ── Format & mount the data disk on first boot ──────────────────
-    DATA_DISK="/dev/disk/by-id/google-es-data"
-    MOUNT_POINT="/opt/elasticsearch/data"
-
-    if ! blkid "$DATA_DISK"; then
-      mkfs.ext4 -F "$DATA_DISK"
-    fi
-
-    mkdir -p "$MOUNT_POINT"
-
-    if ! mountpoint -q "$MOUNT_POINT"; then
-      mount -o discard,defaults "$DATA_DISK" "$MOUNT_POINT"
-    fi
-
-    grep -qF "$DATA_DISK" /etc/fstab || \
-      echo "$DATA_DISK $MOUNT_POINT ext4 discard,defaults 0 2" >> /etc/fstab
-
-    # ── Install Elasticsearch (skip if already installed) ────────────
-    if ! dpkg -l elasticsearch | grep -q '^ii'; then
-      apt-get update -y
-      apt-get install -y apt-transport-https ca-certificates curl gnupg
-
-      curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch \
-        | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
-
-      echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] \
-        https://artifacts.elastic.co/packages/8.x/apt stable main" \
-        | tee /etc/apt/sources.list.d/elastic-8.x.list
-
-      apt-get update -y
-      apt-get install -y elasticsearch=8.13.4
-    fi
-
-    # ── Kernel settings required by ES ──────────────────────────────
-    sysctl -w vm.max_map_count=262144
-    grep -qF "vm.max_map_count" /etc/sysctl.conf || \
-      echo "vm.max_map_count=262144" >> /etc/sysctl.conf
-
-    # ── Fetch ES password from Secret Manager ───────────────────────
-    ELASTIC_PASSWORD=$(gcloud secrets versions access latest \
-      --secret="chess-es-password-${var.env}" \
-      --project="${var.project_id}")
-
-    # ── Configure Elasticsearch ──────────────────────────────────────
-    chown -R elasticsearch:elasticsearch "$MOUNT_POINT"
-
-    cat > /etc/elasticsearch/elasticsearch.yml <<CONFIG
-cluster.name: chess-${var.env}
-node.name: chess-es-node
-path.data: /opt/elasticsearch/data
-path.logs: /var/log/elasticsearch
-network.host: 0.0.0.0
-http.port: 9200
-discovery.type: single-node
-xpack.security.enabled: true
-xpack.security.transport.ssl.enabled: false
-xpack.security.http.ssl.enabled: false
-CONFIG
-
-    # Set heap to 1.5g - safe for e2-medium
-    echo "-Xms1500m" > /etc/elasticsearch/jvm.options.d/heap.options
-    echo "-Xmx1500m" >> /etc/elasticsearch/jvm.options.d/heap.options
-
-    # Set the built-in elastic user password
-    /usr/share/elasticsearch/bin/elasticsearch-reset-password \
-      -u elastic --batch -p "$ELASTIC_PASSWORD"
-
-    # ── Enable and start via systemd ─────────────────────────────────
-    systemctl daemon-reload
-    systemctl enable elasticsearch
-    systemctl start elasticsearch
-  EOT
-
   encoder_github_repo   = "chess-position-encoder"
   encoder_github_branch = "main"
 }
