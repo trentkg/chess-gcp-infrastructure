@@ -25,8 +25,8 @@ echo "-Xmx${ES_HEAP_SIZE}" >> /etc/elasticsearch/jvm.options.d/heap.options
 # ── Configure Elasticsearch ──────────────────────────────────────
 cat > /etc/elasticsearch/elasticsearch.yml <<CONFIG
 node.name: chess-es-node
-path.logs: /var/log/elasticsearch
 path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
 network.host: 0.0.0.0
 http.port: 9200
 discovery.type: single-node
@@ -39,7 +39,7 @@ CONFIG
 mkdir -p /var/lib/elasticsearch
 chown elasticsearch:elasticsearch /var/lib/elasticsearch
 
-# ── Boot-time setup script ───────────────────────────────────────
+# ── Boot-time disk setup script ──────────────────────────────────
 cat > /usr/local/bin/es-boot-setup.sh <<'BOOT'
 #!/bin/bash
 set -euo pipefail
@@ -74,7 +74,31 @@ chmod 750 "$MOUNT_POINT"
 BOOT
 chmod +x /usr/local/bin/es-boot-setup.sh
 
-# ── Systemd unit for boot setup ──────────────────────────────────
+# ── Boot-time password setup script ─────────────────────────────
+cat > /usr/local/bin/es-set-password.sh <<'SCRIPT'
+#!/bin/bash
+set -euo pipefail
+
+PROJECT_ID=$(curl -sf "http://metadata.google.internal/computeMetadata/v1/project/project-id" \
+  -H "Metadata-Flavor: Google")
+
+# Wait for Elasticsearch to be ready (up to 60s)
+for i in $(seq 1 30); do
+  if curl -s http://localhost:9200 > /dev/null 2>&1; then break; fi
+  echo "Waiting for Elasticsearch... ($i)"
+  sleep 2
+done
+
+ES_PASSWORD=$(gcloud secrets versions access latest \
+  --secret="chess-es-password-dev" \
+  --project="$PROJECT_ID")
+
+printf "y\n$ES_PASSWORD\n$ES_PASSWORD\n" | \
+  /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -i
+SCRIPT
+chmod +x /usr/local/bin/es-set-password.sh
+
+# ── Systemd unit: disk mount (runs before ES) ────────────────────
 cat > /etc/systemd/system/es-boot-setup.service <<'UNIT'
 [Unit]
 Description=Elasticsearch data disk mount and setup
@@ -90,7 +114,23 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 UNIT
 
-# ── Drop-in to make elasticsearch wait for mount ─────────────────
+# ── Systemd unit: password set (runs after ES) ───────────────────
+cat > /etc/systemd/system/es-set-password.service <<'UNIT'
+[Unit]
+Description=Set Elasticsearch elastic user password from Secret Manager
+After=elasticsearch.service
+Requires=elasticsearch.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/es-set-password.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+# ── Drop-in to make elasticsearch wait for disk mount ────────────
 mkdir -p /etc/systemd/system/elasticsearch.service.d
 cat > /etc/systemd/system/elasticsearch.service.d/wait-for-mount.conf <<'DROP'
 [Unit]
@@ -102,3 +142,4 @@ DROP
 systemctl daemon-reload
 systemctl enable es-boot-setup
 systemctl enable elasticsearch
+systemctl enable es-set-password
