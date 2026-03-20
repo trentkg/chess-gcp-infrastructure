@@ -4,23 +4,17 @@ resource "google_service_account" "cloudbuild" {
   project      = var.project_id
 }
 
-resource "google_project_iam_member" "cloudbuild_storage_admin" {
+resource "google_project_iam_member" "cloudbuild_roles" {
+  for_each = toset([
+    "roles/storage.admin",
+    "roles/artifactregistry.writer",
+    "roles/logging.logWriter",
+  ])
   project = var.project_id
-  role    = "roles/storage.admin"
+  role    = each.value
   member  = "serviceAccount:${google_service_account.cloudbuild.email}"
 }
 
-resource "google_project_iam_member" "cloudbuild_artifact_registry_writer" {
-  project = var.project_id
-  role    = "roles/artifactregistry.writer"
-  member  = "serviceAccount:${google_service_account.cloudbuild.email}"
-}
-
-resource "google_project_iam_member" "cloudbuild_artifact_log_writer" {
-  project = var.project_id
-  role    = "roles/logging.logWriter"
-  member  = "serviceAccount:${google_service_account.cloudbuild.email}"
-}
 
 resource "google_project_iam_member" "cloudbuild_sa_log_writer" {
   project = var.project_id

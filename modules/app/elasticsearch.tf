@@ -4,21 +4,14 @@ resource "google_service_account" "elasticsearch" {
   project      = var.project_id
 }
 
-resource "google_project_iam_member" "es-logging" {
+resource "google_project_iam_member" "es_roles" {
+  for_each = toset([
+    "roles/logging.logWriter",
+    "roles/monitoring.metricWriter",
+    "roles/secretmanager.secretAccessor",
+  ])
   project = var.project_id
-  role    = "roles/logging.logWriter"
-  member  = "serviceAccount:${google_service_account.elasticsearch.email}"
-}
-
-resource "google_project_iam_member" "es-monitoring" {
-  project = var.project_id
-  role    = "roles/monitoring.metricWriter"
-  member  = "serviceAccount:${google_service_account.elasticsearch.email}"
-}
-
-resource "google_project_iam_member" "es-secret-access" {
-  project = var.project_id
-  role    = "roles/secretmanager.secretAccessor"
+  role    = each.value
   member  = "serviceAccount:${google_service_account.elasticsearch.email}"
 }
 
