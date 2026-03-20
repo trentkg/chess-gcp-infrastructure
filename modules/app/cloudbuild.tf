@@ -47,9 +47,16 @@ resource "google_cloudbuildv2_repository" "encoder" {
   remote_uri        = "https://github.com/${var.github_owner}/${local.encoder_github_repo}.git"
 }
 
-resource "google_cloudbuild_trigger" "transformer" {
-  name            = "transformer-trigger"
-  description     = "Trigger build for transformer image"
+resource "google_cloudbuild_trigger" "images" {
+  for_each = {
+    transformer = { disabled = false, dockerfile_dir = "transformer" }
+    loader      = { disabled = true,  dockerfile_dir = "loader" }
+    extractor   = { disabled = true,  dockerfile_dir = "extractor" }
+  }
+
+  name            = "${each.key}-trigger"
+  description     = "Trigger build for ${each.key} image"
+  disabled        = each.value.disabled
   project         = var.project_id
   location        = var.region
   service_account = "projects/${var.project_id}/serviceAccounts/${google_service_account.cloudbuild.email}"
@@ -66,53 +73,7 @@ resource "google_cloudbuild_trigger" "transformer" {
     }
   }
 
-  filename = "dockerfiles/transformer/cloudbuild.yaml"
-}
-
-resource "google_cloudbuild_trigger" "loader" {
-  name            = "loader-trigger"
-  disabled        = true
-  description     = "Trigger build for loader image"
-  project         = var.project_id
-  location        = var.region
-  service_account = "projects/${var.project_id}/serviceAccounts/${google_service_account.cloudbuild.email}"
-
-  substitutions = {
-    _REGION = var.region
-    _ENV    = var.env
-  }
-
-  repository_event_config {
-    repository = google_cloudbuildv2_repository.encoder.id
-    push {
-      branch = local.encoder_github_branch
-    }
-  }
-
-  filename = "dockerfiles/loader/cloudbuild.yaml"
-}
-
-resource "google_cloudbuild_trigger" "extractor" {
-  name            = "extractor-trigger"
-  disabled        = true
-  description     = "Trigger build for extractor image"
-  project         = var.project_id
-  location        = var.region
-  service_account = "projects/${var.project_id}/serviceAccounts/${google_service_account.cloudbuild.email}"
-
-  substitutions = {
-    _REGION = var.region
-    _ENV    = var.env
-  }
-
-  repository_event_config {
-    repository = google_cloudbuildv2_repository.encoder.id
-    push {
-      branch = local.encoder_github_branch
-    }
-  }
-
-  filename = "dockerfiles/extractor/cloudbuild.yaml"
+  filename = "dockerfiles/${each.value.dockerfile_dir}/cloudbuild.yaml"
 }
 
 resource "google_secret_manager_secret" "github_oauth_token" {

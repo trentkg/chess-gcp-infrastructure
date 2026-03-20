@@ -10,15 +10,17 @@ output "iap_tunnel_command" {
   description = "Tunnel to ES locally for debugging (then hit https://localhost:9200)"
   value       = "gcloud compute start-iap-tunnel chess-elasticsearch-${var.env} 9200 --local-host-port=localhost:9200 --zone=${var.zone} --project=${var.project_id}"
 }
+
 output "cloudbuild_trigger_transformer_id" {
-  value = google_cloudbuild_trigger.transformer.id
+  value = google_cloudbuild_trigger.images["transformer"].id
 }
 output "cloudbuild_trigger_loader_id" {
-  value = google_cloudbuild_trigger.loader.id
+  value = google_cloudbuild_trigger.images["loader"].id
 }
 output "cloudbuild_trigger_extractor_id" {
-  value = google_cloudbuild_trigger.extractor.id
+  value = google_cloudbuild_trigger.images["extractor"].id
 }
+
 output "cloudbuild_service_account" {
   value = google_service_account.cloudbuild.email
 }
