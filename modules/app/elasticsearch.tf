@@ -23,7 +23,7 @@ resource "google_compute_disk" "es-data" {
   size    = 10
 
   lifecycle {
-    prevent_destroy = true 
+    prevent_destroy = true
   }
 }
 
