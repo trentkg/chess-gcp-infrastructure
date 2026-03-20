@@ -54,3 +54,9 @@ variable "es_vm_machine_type" {
   type        = string
   default     = "e2-small"
 }
+
+variable "es_preemptible" {
+  description = "Whether to use spot/preemptible pricing for the Elasticsearch VM"
+  type        = bool
+  default     = false
+}

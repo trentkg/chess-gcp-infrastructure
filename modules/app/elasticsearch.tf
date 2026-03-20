@@ -67,9 +67,9 @@ resource "google_compute_instance" "elasticsearch" {
   }
 
   scheduling {
-    preemptible         = var.env == "dev" ? true : false
-    on_host_maintenance = var.env == "dev" ? "TERMINATE" : "MIGRATE"
-    automatic_restart   = var.env == "dev" ? false : true
+    preemptible         = var.es_preemptible
+    on_host_maintenance = var.es_preemptible ? "TERMINATE" : "MIGRATE"
+    automatic_restart   = var.es_preemptible ? false : true 
   }
 
   shielded_instance_config {

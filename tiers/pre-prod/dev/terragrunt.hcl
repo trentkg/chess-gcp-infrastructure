@@ -19,4 +19,5 @@ inputs = {
     github_oauth_token = get_env("GITHUB_OAUTH_TOKEN")
     env = local.env_vars["env"]
     project_id = local.env_vars["project_id"]
+    es_preemptible             = get_env("ES_PREEMPTIBLE", "false") == "true"
 }
