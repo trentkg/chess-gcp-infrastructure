@@ -50,8 +50,8 @@ resource "google_cloudbuildv2_repository" "encoder" {
 resource "google_cloudbuild_trigger" "images" {
   for_each = {
     transformer = { disabled = false, dockerfile_dir = "transformer" }
-    loader      = { disabled = true,  dockerfile_dir = "loader" }
-    extractor   = { disabled = true,  dockerfile_dir = "extractor" }
+    loader      = { disabled = true, dockerfile_dir = "loader" }
+    extractor   = { disabled = true, dockerfile_dir = "extractor" }
   }
 
   name            = "${each.key}-trigger"
