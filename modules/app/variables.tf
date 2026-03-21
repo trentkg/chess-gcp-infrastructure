@@ -62,9 +62,9 @@ variable "es_preemptible" {
 }
 
 variable "es_compute_disk_size" {
-  type        = number 
+  type        = number
   description = "The size of the es persistant disk."
-	default     = 20 
+  default     = 20
 }
 
 variable "es_heap_size" {
