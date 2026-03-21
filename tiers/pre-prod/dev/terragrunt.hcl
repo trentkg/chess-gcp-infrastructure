@@ -21,5 +21,6 @@ inputs = {
     project_id = local.env_vars["project_id"]
     es_preemptible             = get_env("ES_PREEMPTIBLE", "false") == "true"
     es_preemptible             = get_env("ES_PREEMPTIBLE", "false") == "true"
+    es_compute_disk_size       = 40
 
 }
