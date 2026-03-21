@@ -20,7 +20,7 @@ resource "google_compute_disk" "es-data" {
   project = var.project_id
   zone    = var.zone
   type    = "pd-standard"
-  size    = 10
+  size    = var.es_compute_disk_size
 
   lifecycle {
     prevent_destroy = true

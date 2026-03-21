@@ -52,11 +52,17 @@ variable "es_desired_status" {
 variable "es_vm_machine_type" {
   description = "Machine type of the elasticsearch compute instance, e.g. e2-standard-4"
   type        = string
-  default     = "e2-small"
+  default     = "e2-medium"
 }
 
 variable "es_preemptible" {
   description = "Whether to use spot/preemptible pricing for the Elasticsearch VM"
   type        = bool
   default     = false
+}
+
+variable "es_compute_disk_size" {
+  type        = number 
+  description = "The size of the es persistant disk."
+	default     = 20 
 }

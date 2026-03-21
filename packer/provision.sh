@@ -69,6 +69,9 @@ if ! mountpoint -q "$MOUNT_POINT"; then
   mount "$DATA_DISK" "$MOUNT_POINT"
 fi
 
+# Resize filesystem to fill available disk space (no-op if already full size)
+resize2fs "$DATA_DISK"
+
 chown -R elasticsearch:elasticsearch "$MOUNT_POINT"
 chmod 750 "$MOUNT_POINT"
 BOOT
