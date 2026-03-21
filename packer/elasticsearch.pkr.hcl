@@ -17,10 +17,6 @@ variable "zone" {
   default = "us-central1-a"
 }
 
-variable "es_heap_size" {
-  type    = string
-  default = "512m"
-}
 
 source "googlecompute" "elasticsearch" {
   project_id          = var.project_id
@@ -41,8 +37,5 @@ build {
   provisioner "shell" {
     execute_command = "sudo sh -c '{{ .Vars }} {{ .Path }}'"
     script          = "provision.sh"
-    environment_vars = [
-    "ES_HEAP_SIZE=${var.es_heap_size}"
-    ]
   }
 }

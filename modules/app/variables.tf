@@ -66,3 +66,8 @@ variable "es_compute_disk_size" {
   description = "The size of the es persistant disk."
 	default     = 20 
 }
+
+variable "es_heap_size" {
+  type    = string
+  default = "2g"
+}

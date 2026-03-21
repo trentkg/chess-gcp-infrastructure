@@ -18,10 +18,6 @@ apt-get install -y elasticsearch=8.13.4
 # ── Kernel settings ──────────────────────────────────────────────
 echo "vm.max_map_count=262144" >> /etc/sysctl.conf
 
-# ── Heap size ────────────────────────────────────────────────────
-echo "-Xms${ES_HEAP_SIZE}" > /etc/elasticsearch/jvm.options.d/heap.options
-echo "-Xmx${ES_HEAP_SIZE}" >> /etc/elasticsearch/jvm.options.d/heap.options
-
 # ── Configure Elasticsearch ──────────────────────────────────────
 cat > /etc/elasticsearch/elasticsearch.yml <<CONFIG
 node.name: chess-es-node
@@ -46,6 +42,21 @@ set -euo pipefail
 
 DATA_DISK="/dev/disk/by-id/google-es-data"
 MOUNT_POINT="/var/lib/elasticsearch"
+
+# Set heap size from instance metadata
+HEAP_SIZE=$(curl -sf \
+  "http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-heap-size" \
+  -H "Metadata-Flavor: Google" || true)
+
+if [ -n "$HEAP_SIZE" ]; then
+  echo "es-boot-setup: heap size from instance metadata: ${HEAP_SIZE}"
+else
+  HEAP_SIZE="2g"
+  echo "es-boot-setup: heap size not found in metadata, using default: ${HEAP_SIZE}"
+fi
+
+echo "-Xms${HEAP_SIZE}" > /etc/elasticsearch/jvm.options.d/heap.options
+echo "-Xmx${HEAP_SIZE}" >> /etc/elasticsearch/jvm.options.d/heap.options
 
 # Wait for the data disk to appear (up to 30s)
 for i in $(seq 1 30); do
