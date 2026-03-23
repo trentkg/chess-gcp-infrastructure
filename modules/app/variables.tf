@@ -71,3 +71,89 @@ variable "es_heap_size" {
   type    = string
   default = "2g"
 }
+
+variable "api_cpu" {
+  type        = string
+  description = "CPU limit for the FastAPI service"
+  default     = "1"
+}
+
+variable "api_memory" {
+  type        = string
+  description = "Memory limit for the FastAPI service"
+  default     = "512Mi"
+}
+
+variable "frontend_cpu" {
+  type        = string
+  description = "CPU limit for the frontend service"
+  default     = "1"
+}
+
+variable "frontend_memory" {
+  type        = string
+  description = "Memory limit for the frontend service"
+  default     = "512Mi"
+}
+
+variable "api_min_instances" {
+  type        = number
+  description = "Minimum number of API instances (0 = scale to zero)"
+  default     = 0
+}
+
+variable "api_max_instances" {
+  type        = number
+  description = "Maximum number of API instances"
+  default     = 4
+}
+
+variable "frontend_min_instances" {
+  type        = number
+  description = "Minimum number of frontend instances"
+  default     = 0
+}
+
+variable "frontend_max_instances" {
+  type        = number
+  description = "Maximum number of frontend instances"
+  default     = 2
+}
+
+variable "api_url" {
+  type        = string
+  description = "Base URL of the deployed Cloud Run API service, baked into the frontend bundle at build time"
+  default     = ""
+}
+
+variable "max_instances" {
+  description = "Maximum number of instances in the autoscaling group (3–10). Must be greater than min_instances. Mutually exclusive with max_throughput."
+  type        = number
+  default     = null
+
+  validation {
+    condition = (
+      var.max_instances == null ||
+      (var.max_instances >= 3 && var.max_instances <= 10)
+    )
+    error_message = "max_instances must be between 3 and 10 (inclusive)."
+  }
+}
+
+variable "max_throughput" {
+  description = "Maximum throughput in Mbps (300–1000, multiples of 100). Must be greater than min_throughput. Mutually exclusive with max_instances. This is between ES and the Serverless VPC"
+  type        = number
+  default     = null
+
+  validation {
+    condition = (
+      var.max_throughput == null ||
+      (
+        var.max_throughput >= 300 &&
+        var.max_throughput <= 1000 &&
+        var.max_throughput % 100 == 0
+      )
+    )
+    error_message = "max_throughput must be a multiple of 100 between 300 and 1000."
+  }
+}

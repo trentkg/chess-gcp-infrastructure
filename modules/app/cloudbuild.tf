@@ -1,5 +1,7 @@
 resource "google_service_account" "cloudbuild" {
   account_id   = "cloudbuild-${var.env}"
+
+
   display_name = "Cloud Build Service Account (${var.env})"
   project      = var.project_id
 }
@@ -47,16 +49,42 @@ resource "google_cloudbuildv2_repository" "encoder" {
   remote_uri        = "https://github.com/${var.github_owner}/${local.encoder_github_repo}.git"
 }
 
+# -----------------------------------------------------------------------
+# Grant Cloud Build SA permission to deploy Cloud Run + act as Cloud Run SAs
+# -----------------------------------------------------------------------
+resource "google_project_iam_member" "cloudbuild_run_roles" {
+  for_each = toset([
+    "roles/run.developer",
+    "roles/iam.serviceAccountUser",
+  ])
+  project = var.project_id
+  role    = each.value
+  member  = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
+resource "google_service_account_iam_member" "cloudbuild_act_as_api" {
+  service_account_id = google_service_account.api.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
+resource "google_service_account_iam_member" "cloudbuild_act_as_frontend" {
+  service_account_id = google_service_account.frontend.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
 resource "google_cloudbuild_trigger" "images" {
   for_each = {
-    transformer = { disabled = false, dockerfile_dir = "transformer" }
-    loader      = { disabled = true, dockerfile_dir = "loader" }
-    extractor   = { disabled = true, dockerfile_dir = "extractor" }
+    transformer = { dockerfile_dir = "transformer" }
+    loader      = { dockerfile_dir = "loader" }
+    extractor   = { dockerfile_dir = "extractor" }
+    api         = { dockerfile_dir = "api" }
+    frontend    = { dockerfile_dir = "frontend" }
   }
 
   name            = "${each.key}-trigger"
-  description     = "Trigger build for ${each.key} image"
-  disabled        = each.value.disabled
+  description     = "Manual build trigger for ${each.key}"
   project         = var.project_id
   location        = var.region
   service_account = "projects/${var.project_id}/serviceAccounts/${google_service_account.cloudbuild.email}"
@@ -64,13 +92,18 @@ resource "google_cloudbuild_trigger" "images" {
   substitutions = {
     _REGION = var.region
     _ENV    = var.env
+		_API_URL = var.api_url 
+	}
+  
+
+  source_to_build {
+    repository = google_cloudbuildv2_repository.encoder.id
+    ref        = "refs/heads/${local.encoder_github_branch}"
+    repo_type  = "GITHUB"
   }
 
-  repository_event_config {
-    repository = google_cloudbuildv2_repository.encoder.id
-    push {
-      branch = local.encoder_github_branch
-    }
+  approval_config {
+    approval_required = false
   }
 
   filename = "dockerfiles/${each.value.dockerfile_dir}/cloudbuild.yaml"
