@@ -1,5 +1,5 @@
 locals {
-    env_vars = yamldecode(file(find_in_parent_folders("env-vars.yaml")))
+    env_vars = yamldecode(file("env-vars.yaml"))
 
 }
 remote_state {
@@ -12,7 +12,7 @@ remote_state {
 }
 
 terraform {
-    source = "../../../modules/app/"
+    source = "../modules/app/"
 }
 inputs = {
     github_app_installation_id = local.env_vars["github_installation_id"]
@@ -22,5 +22,5 @@ inputs = {
     es_preemptible             = get_env("ES_PREEMPTIBLE", "false") == "true"
     es_preemptible             = get_env("ES_PREEMPTIBLE", "false") == "true"
     es_compute_disk_size       = 40
-
+    api_url                    = local.env_vars["api_url"] 
 }

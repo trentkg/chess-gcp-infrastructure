@@ -3,3 +3,4 @@
 *.log
 *cache*
 *terraform.lock.hcl
+dev/*.sh
