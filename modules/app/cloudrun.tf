@@ -34,11 +34,11 @@ resource "google_secret_manager_secret_iam_member" "api_secret_access" {
 # VPC connector — Cloud Run → ES VM on internal IP
 # -----------------------------------------------------------------------
 resource "google_vpc_access_connector" "connector" {
-  name          = "cr-connector-${var.env}"
-  project       = var.project_id
-  region        = var.region
-  network       = google_compute_network.chess.name
-  ip_cidr_range = "10.8.0.0/28"
+  name           = "cr-connector-${var.env}"
+  project        = var.project_id
+  region         = var.region
+  network        = google_compute_network.chess.name
+  ip_cidr_range  = "10.8.0.0/28"
   max_throughput = var.max_throughput
 
 }
@@ -60,7 +60,8 @@ resource "google_cloud_run_v2_service" "api" {
     }
 
     containers {
-      image = "${var.artifact_registry_location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.chess-artifact-registry.repository_id}/api:latest"
+      image = "us-docker.pkg.dev/cloudrun/container/hello" # Google's hello-world image
+
 
       resources {
         limits = {
@@ -100,13 +101,21 @@ resource "google_cloud_run_v2_service" "api" {
         name  = "ENV"
         value = var.env
       }
+      
+
     }
 
     vpc_access {
       connector = google_vpc_access_connector.connector.id
       egress    = "PRIVATE_RANGES_ONLY"
     }
+	
   }
+	lifecycle { # let cloudbuild manage this
+        ignore_changes = [
+          template[0].containers[0].image
+        ]
+      }
 }
 
 # -----------------------------------------------------------------------
@@ -125,8 +134,8 @@ resource "google_cloud_run_v2_service" "frontend" {
       max_instance_count = var.frontend_max_instances
     }
 
-    containers {
-      image = "${var.artifact_registry_location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.chess-artifact-registry.repository_id}/frontend:latest"
+    containers {                                           # Let cloud build overwrite this, only used for first deploy
+      image = "us-docker.pkg.dev/cloudrun/container/hello" # Google's hello-world image
 
       resources {
         limits = {
@@ -135,12 +144,19 @@ resource "google_cloud_run_v2_service" "frontend" {
         }
       }
 
+      
+
       env {
         name  = "NEXT_PUBLIC_API_URL"
         value = google_cloud_run_v2_service.api.uri
       }
     }
   }
+	lifecycle {
+        ignore_changes = [
+          template[0].containers[0].image
+        ]
+      }
 }
 
 # -----------------------------------------------------------------------

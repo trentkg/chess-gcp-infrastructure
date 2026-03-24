@@ -1,5 +1,5 @@
 resource "google_service_account" "cloudbuild" {
-  account_id   = "cloudbuild-${var.env}"
+  account_id = "cloudbuild-${var.env}"
 
 
   display_name = "Cloud Build Service Account (${var.env})"
@@ -90,11 +90,11 @@ resource "google_cloudbuild_trigger" "images" {
   service_account = "projects/${var.project_id}/serviceAccounts/${google_service_account.cloudbuild.email}"
 
   substitutions = {
-    _REGION = var.region
-    _ENV    = var.env
-		_API_URL = var.api_url 
-	}
-  
+    _REGION  = var.region
+    _ENV     = var.env
+    _API_URL = var.api_url
+  }
+
 
   source_to_build {
     repository = google_cloudbuildv2_repository.encoder.id

@@ -157,3 +157,15 @@ variable "max_throughput" {
     error_message = "max_throughput must be a multiple of 100 between 300 and 1000."
   }
 }
+
+variable "registry_cleanup_keep_count" {
+  description = "Number of most recent images to keep per image stream"
+  type        = number
+  default     = 1
+}
+
+variable "registry_cleanup_older_than_days" {
+  description = "Delete images older than this many days (images protected by keep_count are exempt)"
+  type        = number
+  default     = 7
+}

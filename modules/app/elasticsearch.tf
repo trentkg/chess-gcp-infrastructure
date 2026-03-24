@@ -59,7 +59,7 @@ resource "google_compute_instance" "elasticsearch" {
 
   metadata = {
     block-project-ssh-keys = "true"
-		es-heap-size           = var.es_heap_size
+    es-heap-size           = var.es_heap_size
   }
 
   service_account {
