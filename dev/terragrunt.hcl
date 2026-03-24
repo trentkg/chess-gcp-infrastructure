@@ -1,26 +1,29 @@
 locals {
-    env_vars = yamldecode(file("env-vars.yaml"))
+  github_oauth_token = get_env("GITHUB_OAUTH_TOKEN")
+  es_preemptible     = get_env("ES_PREEMPTIBLE", "false") == "true"
+}
 
-}
 remote_state {
-    backend = "gcs"
-    config = {
-	    project = local.env_vars["project_id"] 
-	    location = "us"
-	    bucket = "chess-${local.env_vars["env"]}-tfstate-backend-bucket"
-}
+  backend = "gcs"
+  config = {
+    project  = "chess-dev-411818"
+    location = "us"
+    bucket   = "chess-dev-tfstate-backend-bucket"
+  }
 }
 
 terraform {
-    source = "../modules/app/"
+  source = "../modules/app/"
 }
+
 inputs = {
-    github_app_installation_id = local.env_vars["github_installation_id"]
-    github_oauth_token = get_env("GITHUB_OAUTH_TOKEN")
-    env = local.env_vars["env"]
-    project_id = local.env_vars["project_id"]
-    es_preemptible             = get_env("ES_PREEMPTIBLE", "false") == "true"
-    es_preemptible             = get_env("ES_PREEMPTIBLE", "false") == "true"
-    es_compute_disk_size       = 40
-    api_url                    = local.env_vars["api_url"] 
+  env                              = "dev"
+  project_id                       = "chess-dev-411818"
+  github_app_installation_id       = 113815876
+  github_oauth_token               = local.github_oauth_token
+  es_preemptible                   = local.es_preemptible
+  es_compute_disk_size             = 40
+  api_url                          = "https://chess-frontend-dev-c4ltgvivga-uc.a.run.app"
+  registry_cleanup_keep_count      = 1
+  registry_cleanup_older_than_days = 2
 }
