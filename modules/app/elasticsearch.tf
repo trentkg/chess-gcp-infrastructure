@@ -1,6 +1,6 @@
 resource "google_service_account" "elasticsearch" {
   account_id   = "chess-es-${var.env}"
-  display_name = "Elasticsearch (${var.env})"
+  display_name = "elasticsearch (${var.env})"
   project      = var.project_id
 }
 
@@ -79,11 +79,11 @@ resource "google_compute_instance" "elasticsearch" {
     enable_integrity_monitoring = true
   }
 
-  desired_status            = var.es_desired_status
   allow_stopping_for_update = true
 
   lifecycle {
-    ignore_changes = [metadata["startup-script"]]
+    # Manage status in the terminal to save costs 
+    ignore_changes = [desired_status]
   }
 }
 
