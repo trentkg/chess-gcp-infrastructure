@@ -31,20 +31,6 @@ resource "google_secret_manager_secret_iam_member" "api_secret_access" {
 
 
 # -----------------------------------------------------------------------
-# VPC connector — Cloud Run → ES VM on internal IP
-# -----------------------------------------------------------------------
-resource "google_vpc_access_connector" "connector" {
-  name           = "cr-connector-${var.env}"
-  project        = var.project_id
-  region         = var.region
-  network        = google_compute_network.chess.name
-  ip_cidr_range  = "10.8.0.0/28"
-  max_throughput = var.max_throughput
-  machine_type   = var.vpc_access_connector_machine_type
-
-}
-
-# -----------------------------------------------------------------------
 # FastAPI service
 # -----------------------------------------------------------------------
 resource "google_cloud_run_v2_service" "api" {
@@ -90,28 +76,28 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
       env {
-        name = "ES_PASSWORD"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.es_password.secret_id
-            version = "latest"
-          }
-        }
+        name  = "ES_PASSWORD_NAME"
+        value = google_secret_manager_secret.es_password.secret_id
       }
       env {
         name  = "ENV"
         value = var.env
       }
-
-
+      env {
+        name  = "GCP_PROJECT"
+        value = var.project_id
+      }
     }
-
     vpc_access {
-      connector = google_vpc_access_connector.connector.id
-      egress    = "PRIVATE_RANGES_ONLY"
+      egress = "ALL_TRAFFIC"
+      network_interfaces {
+        network    = google_compute_network.chess.id
+        subnetwork = google_compute_subnetwork.chess.id
+      }
     }
 
   }
+
   lifecycle { # let cloudbuild manage this
     ignore_changes = [
       template[0].containers[0].image,
@@ -183,6 +169,17 @@ resource "google_cloud_run_v2_service_iam_member" "api_frontend_invoker" {
   member   = "serviceAccount:${google_service_account.frontend.email}"
 }
 
+# --- 
+# Allow api to create and use the subnet for use with new egress
+#
+resource "google_compute_subnetwork_iam_member" "api_network_user" {
+  project    = var.project_id
+  region     = var.region
+  subnetwork = google_compute_subnetwork.chess.name
+
+  role   = "roles/compute.networkUser"
+  member = "serviceAccount:${google_service_account.api.email}"
+}
 # -----------------------------------------------------------------------
 # Outputs
 # -----------------------------------------------------------------------

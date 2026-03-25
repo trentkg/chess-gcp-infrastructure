@@ -121,8 +121,10 @@ resource "google_secret_manager_secret" "es_host" {
 }
 
 resource "google_secret_manager_secret_version" "es_host" {
-  secret      = google_secret_manager_secret.es_host.id
-  secret_data = google_compute_instance.elasticsearch.network_interface[0].network_ip
+  secret = google_secret_manager_secret.es_host.id
+  # change to https if using ssl
+  secret_data = "http://${google_compute_instance.elasticsearch.network_interface[0].network_ip}:${var.es_port}"
+
 }
 
 resource "google_secret_manager_secret" "es_ca_cert" {

@@ -36,7 +36,7 @@ resource "google_compute_firewall" "beam-to-es" {
 
   allow {
     protocol = "tcp"
-    ports    = ["9200", "9300"]
+    ports    = [var.es_port, "9300"]
   }
 
   source_tags = ["beam-worker"]
@@ -50,7 +50,7 @@ resource "google_compute_firewall" "vpc-to-es" {
 
   allow {
     protocol = "tcp"
-    ports    = ["9200"]
+    ports    = [var.es_port]
   }
 
   source_ranges = [google_compute_subnetwork.chess.ip_cidr_range]
@@ -78,7 +78,7 @@ resource "google_compute_firewall" "iap-es" {
 
   allow {
     protocol = "tcp"
-    ports    = ["9200"]
+    ports    = [var.es_port]
   }
 
   source_ranges = ["35.235.240.0/20"]

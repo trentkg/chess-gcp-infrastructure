@@ -120,26 +120,6 @@ variable "api_url" {
   default     = ""
 }
 
-variable "max_instances" {
-  description = "Maximum number of instances in the autoscaling group (3–10). Must be greater than min_instances. Mutually exclusive with max_throughput."
-  type        = number
-  default     = null
-
-  validation {
-    condition = (
-      var.max_instances == null ||
-      (var.max_instances >= 3 && var.max_instances <= 10)
-    )
-    error_message = "max_instances must be between 3 and 10 (inclusive)."
-  }
-}
-
-variable "max_throughput" {
-  description = "Maximum throughput in Mbps (300–1000, multiples of 100). Must be greater than min_throughput. Mutually exclusive with max_instances. This is between ES and the Serverless VPC"
-  type        = string
-  default     = "300"
-}
-
 variable "registry_cleanup_keep_count" {
   description = "Number of most recent images to keep per image stream"
   type        = number
@@ -152,10 +132,9 @@ variable "registry_cleanup_older_than_days" {
   default     = 7
 }
 
-variable "vpc_access_connector_machine_type" {
-  description = "The size of the vpc access connector. Defaults to e2-micro."
+variable "es_port" {
+  description = "The port we expose for elasticsearch. Defaults to 9200"
   type        = string
-  default     = "e2-micro"
+  default     = "9200"
+
 }
-
-
