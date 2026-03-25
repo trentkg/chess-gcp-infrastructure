@@ -40,6 +40,7 @@ resource "google_vpc_access_connector" "connector" {
   network        = google_compute_network.chess.name
   ip_cidr_range  = "10.8.0.0/28"
   max_throughput = var.max_throughput
+  machine_type   = var.vpc_access_connector_machine_type
 
 }
 
@@ -101,7 +102,7 @@ resource "google_cloud_run_v2_service" "api" {
         name  = "ENV"
         value = var.env
       }
-      
+
 
     }
 
@@ -109,13 +110,13 @@ resource "google_cloud_run_v2_service" "api" {
       connector = google_vpc_access_connector.connector.id
       egress    = "PRIVATE_RANGES_ONLY"
     }
-	
+
   }
-	lifecycle { # let cloudbuild manage this
-        ignore_changes = [
-          template[0].containers[0].image
-        ]
-      }
+  lifecycle { # let cloudbuild manage this
+    ignore_changes = [
+      template[0].containers[0].image
+    ]
+  }
 }
 
 # -----------------------------------------------------------------------
@@ -144,7 +145,7 @@ resource "google_cloud_run_v2_service" "frontend" {
         }
       }
 
-      
+
 
       env {
         name  = "NEXT_PUBLIC_API_URL"
@@ -152,11 +153,11 @@ resource "google_cloud_run_v2_service" "frontend" {
       }
     }
   }
-	lifecycle {
-        ignore_changes = [
-          template[0].containers[0].image
-        ]
-      }
+  lifecycle {
+    ignore_changes = [
+      template[0].containers[0].image
+    ]
+  }
 }
 
 # -----------------------------------------------------------------------

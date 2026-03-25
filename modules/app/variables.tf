@@ -169,3 +169,11 @@ variable "registry_cleanup_older_than_days" {
   type        = number
   default     = 7
 }
+
+variable "vpc_access_connector_machine_type" {
+  description = "The size of the vpc access connector. Defaults to e2-small, e2-micro caused errors in dev."
+  type        = string
+  default     = "e2-small"
+}
+
+
