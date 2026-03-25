@@ -136,20 +136,8 @@ variable "max_instances" {
 
 variable "max_throughput" {
   description = "Maximum throughput in Mbps (300–1000, multiples of 100). Must be greater than min_throughput. Mutually exclusive with max_instances. This is between ES and the Serverless VPC"
-  type        = number
-  default     = null
-
-  validation {
-    condition = (
-      var.max_throughput == null ||
-      (
-        var.max_throughput >= 300 &&
-        var.max_throughput <= 1000 &&
-        var.max_throughput % 100 == 0
-      )
-    )
-    error_message = "max_throughput must be a multiple of 100 between 300 and 1000."
-  }
+  type        = string
+  default     = "300"
 }
 
 variable "registry_cleanup_keep_count" {
@@ -165,9 +153,9 @@ variable "registry_cleanup_older_than_days" {
 }
 
 variable "vpc_access_connector_machine_type" {
-  description = "The size of the vpc access connector. Defaults to e2-small, e2-micro caused errors in dev."
+  description = "The size of the vpc access connector. Defaults to e2-micro."
   type        = string
-  default     = "e2-small"
+  default     = "e2-micro"
 }
 
 
