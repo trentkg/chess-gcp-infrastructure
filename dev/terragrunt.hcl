@@ -23,7 +23,8 @@ inputs = {
   github_oauth_token               = local.github_oauth_token
   es_preemptible                   = local.es_preemptible
   es_compute_disk_size             = 40
-  api_url                          = "https://chess-frontend-dev-c4ltgvivga-uc.a.run.app"
+  api_url                          = "https://chess-api-dev-c4ltgvivga-uc.a.run.app"
+  # frontend url https://chess-frontend-dev-c4ltgvivga-uc.a.run.app/ 
   registry_cleanup_keep_count      = 1
   registry_cleanup_older_than_days = 2
 }
