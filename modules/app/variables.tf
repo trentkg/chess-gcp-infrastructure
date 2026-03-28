@@ -61,6 +61,12 @@ variable "es_compute_disk_size" {
   default     = 20
 }
 
+variable "es_boot_disk_size" {
+  type        = number
+  description = "The size of the es ephemeral disk."
+  default     = 20
+}
+
 variable "es_heap_size" {
   type    = string
   default = "2g"

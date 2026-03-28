@@ -42,7 +42,7 @@ resource "google_compute_instance" "elasticsearch" {
   boot_disk {
     initialize_params {
       image = "projects/${var.project_id}/global/images/family/chess-elasticsearch"
-      size  = 20
+      size  = var.es_boot_disk_size
       type  = "pd-balanced"
     }
   }
