@@ -144,3 +144,9 @@ variable "es_port" {
   default     = "9200"
 
 }
+
+variable "encoder_github_branch" {
+  description = "The github branch we want to trigger cloudbuilds off of for the encoder repo. Defaults to main."
+  type        = string
+  default     = "main"
+}

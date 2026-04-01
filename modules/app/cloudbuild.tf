@@ -98,7 +98,7 @@ resource "google_cloudbuild_trigger" "images" {
 
   source_to_build {
     repository = google_cloudbuildv2_repository.encoder.id
-    ref        = "refs/heads/${local.encoder_github_branch}"
+    ref        = "refs/heads/${var.encoder_github_branch}"
     repo_type  = "GITHUB"
   }
 

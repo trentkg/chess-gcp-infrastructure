@@ -29,4 +29,5 @@ inputs = {
   registry_cleanup_older_than_days = 2
   es_boot_disk_size                = 30
   es_vm_machine_type               = "e2-medium"
+  encoder_github_branch            = "develop"
 }
