@@ -24,6 +24,7 @@ resource "google_compute_disk" "es-data" {
 
   lifecycle {
     prevent_destroy = true
+		ignore_changes  = [snapshot, licenses]
   }
 }
 
