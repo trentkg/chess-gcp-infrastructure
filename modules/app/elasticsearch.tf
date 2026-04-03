@@ -94,7 +94,7 @@ resource "random_password" "es_password" {
 }
 
 resource "google_secret_manager_secret" "es_password" {
-  secret_id = "chess-es-password-${var.env}"
+  secret_id = "chess-es-password"
   project   = var.project_id
 
   replication {
