@@ -103,8 +103,10 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
+SECRET_NAME="chess-es-password"
+
 ES_PASSWORD=$(gcloud secrets versions access latest \
-  --secret="chess-es-password-dev" \
+  --secret="$SECRET_NAME" \
   --project="$PROJECT_ID")
 
 printf "y\n$ES_PASSWORD\n$ES_PASSWORD\n" | \
