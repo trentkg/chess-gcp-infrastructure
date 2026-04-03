@@ -19,7 +19,7 @@ resource "google_compute_disk" "es-data" {
   name    = "chess-es-data-${var.env}"
   project = var.project_id
   zone    = var.zone
-  type    = "pd-standard"
+  type    = "pd-ssd"
   size    = var.es_compute_disk_size
 
   lifecycle {
