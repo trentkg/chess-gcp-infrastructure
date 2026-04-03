@@ -109,7 +109,7 @@ ES_PASSWORD=$(gcloud secrets versions access latest \
   --secret="$SECRET_NAME" \
   --project="$PROJECT_ID")
 
-printf "y\n$ES_PASSWORD\n$ES_PASSWORD\n" | \
+printf "y\n%s\n%s\n" "$ES_PASSWORD" "$ES_PASSWORD" | \
   /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -i
 SCRIPT
 chmod +x /usr/local/bin/es-set-password.sh
