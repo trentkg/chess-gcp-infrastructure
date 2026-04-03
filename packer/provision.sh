@@ -3,7 +3,7 @@ set -euxo pipefail
 
 # ── Install Elasticsearch ────────────────────────────────────────
 apt-get update -y
-apt-get install -y apt-transport-https ca-certificates curl gnupg
+apt-get install -y apt-transport-https ca-certificates curl gnupg jq
 curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch \
   | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
 echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] \
@@ -96,21 +96,43 @@ set -euo pipefail
 PROJECT_ID=$(curl -sf "http://metadata.google.internal/computeMetadata/v1/project/project-id" \
   -H "Metadata-Flavor: Google")
 
-# Wait for Elasticsearch to be ready (up to 60s)
+ES_PASSWORD=$(gcloud secrets versions access latest \
+  --secret="chess-es-password" \
+  --project="$PROJECT_ID") || { echo "ERROR: secret fetch failed" >&2; exit 1; }
+
+# Wait for ES to be up — accept 200 (no auth) or 401 (security enabled, ES ready)
+echo "Waiting for Elasticsearch..."
 for i in $(seq 1 30); do
-  if curl -s http://localhost:9200 > /dev/null 2>&1; then break; fi
-  echo "Waiting for Elasticsearch... ($i)"
-  sleep 2
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9200/ 2>/dev/null || true)
+  if [ "$STATUS" = "200" ] || [ "$STATUS" = "401" ]; then
+    echo "Elasticsearch is up (http_status=$STATUS)"
+    break
+  fi
+  echo "  attempt $i: http_status=$STATUS"
+  sleep 3
 done
 
-SECRET_NAME="chess-es-password"
+# On first boot ES writes a bootstrap password to its log — use it if present,
+# otherwise assume the password has already been set (re-run case) and use the
+# secret itself as the current credential.
+BOOTSTRAP_PASSWORD=$(grep -oP "(?<=generated password for the elastic built-in superuser is : ).*" \
+  /var/log/elasticsearch/*.log 2>/dev/null | tail -1 | tr -d '[:space:]' || true)
 
-ES_PASSWORD=$(gcloud secrets versions access latest \
-  --secret="$SECRET_NAME" \
-  --project="$PROJECT_ID")
+CURRENT_PASSWORD="${BOOTSTRAP_PASSWORD:-$ES_PASSWORD}"
 
-printf "y\n%s\n%s\n" "$ES_PASSWORD" "$ES_PASSWORD" | \
-  /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -i
+HTTP_STATUS=$(curl -s -o /tmp/es-pw-response.json -w "%{http_code}" \
+  -X POST "http://localhost:9200/_security/user/elastic/_password" \
+  -u "elastic:${CURRENT_PASSWORD}" \
+  -H "Content-Type: application/json" \
+  -d "$(jq -n --arg p "$ES_PASSWORD" '{password: $p}')")
+
+if [ "$HTTP_STATUS" = "200" ]; then
+  echo "Password set successfully."
+else
+  echo "ERROR: password reset returned HTTP $HTTP_STATUS" >&2
+  cat /tmp/es-pw-response.json >&2
+  exit 1
+fi
 SCRIPT
 chmod +x /usr/local/bin/es-set-password.sh
 
@@ -130,7 +152,7 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 UNIT
 
-# ── Systemd unit: password set (runs after ES) ───────────────────
+# ── Systemd unit: password set (runs after ES, restartable) ──────
 cat > /etc/systemd/system/es-set-password.service <<'UNIT'
 [Unit]
 Description=Set Elasticsearch elastic user password from Secret Manager
@@ -138,9 +160,10 @@ After=elasticsearch.service
 Requires=elasticsearch.service
 
 [Service]
-Type=oneshot
+Type=simple
 ExecStart=/usr/local/bin/es-set-password.sh
-RemainAfterExit=yes
+Restart=on-failure
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
