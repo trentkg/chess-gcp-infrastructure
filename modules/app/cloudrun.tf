@@ -136,7 +136,7 @@ resource "google_cloud_run_v2_service" "frontend" {
 
 
       env {
-        name  = "NEXT_PUBLIC_API_URL"
+        name  = "API_URL"
         value = google_cloud_run_v2_service.api.uri
       }
     }
