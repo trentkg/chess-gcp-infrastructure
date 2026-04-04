@@ -89,6 +89,19 @@ BOOT
 chmod +x /usr/local/bin/es-boot-setup.sh
 
 # ── Boot-time password setup script ─────────────────────────────
+# Strategy: use elasticsearch-reset-password --batch to unconditionally reset
+# the elastic user to a throwaway temp password (no current credential needed),
+# then immediately set it to the value from Secret Manager. The temp password
+# is live for <1s and only during boot before traffic is routed here.
+#
+# We can't use the Secret Manager password directly to auth the password-change
+# API because we don't know what the *current* ES password is at boot time —
+# it could be a bootstrap password (first boot), a previously set password
+# (restart), or something else entirely. elasticsearch-reset-password --batch
+# sidesteps this by bypassing auth altogether, giving us a known credential
+# to then auth the final set.
+#
+# TL;DR we need to know the password to reset our password :) 
 cat > /usr/local/bin/es-set-password.sh <<'SCRIPT'
 #!/bin/bash
 set -euo pipefail
@@ -100,7 +113,7 @@ ES_PASSWORD=$(gcloud secrets versions access latest \
   --secret="chess-es-password" \
   --project="$PROJECT_ID") || { echo "ERROR: secret fetch failed" >&2; exit 1; }
 
-# Wait for ES to be up — accept 200 (no auth) or 401 (security enabled, ES ready)
+# Wait for ES to be up
 echo "Waiting for Elasticsearch..."
 for i in $(seq 1 30); do
   STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9200/ 2>/dev/null || true)
@@ -112,17 +125,19 @@ for i in $(seq 1 30); do
   sleep 3
 done
 
-# On first boot ES writes a bootstrap password to its log — use it if present,
-# otherwise assume the password has already been set (re-run case) and use the
-# secret itself as the current credential.
-BOOTSTRAP_PASSWORD=$(grep -oP "(?<=generated password for the elastic built-in superuser is : ).*" \
-  /var/log/elasticsearch/*.log 2>/dev/null | tail -1 | tr -d '[:space:]' || true)
+# Reset to a known temp password — no current credential needed
+TEMP_PASSWORD=$(/usr/share/elasticsearch/bin/elasticsearch-reset-password \
+  -u elastic --batch 2>&1 | grep -oP "(?<=New value: ).*" | tr -d '[:space:]')
 
-CURRENT_PASSWORD="${BOOTSTRAP_PASSWORD:-$ES_PASSWORD}"
+if [ -z "$TEMP_PASSWORD" ]; then
+  echo "ERROR: failed to get temp password from elasticsearch-reset-password" >&2
+  exit 1
+fi
 
+# Now set it to the secret value
 HTTP_STATUS=$(curl -s -o /tmp/es-pw-response.json -w "%{http_code}" \
   -X POST "http://localhost:9200/_security/user/elastic/_password" \
-  -u "elastic:${CURRENT_PASSWORD}" \
+  -u "elastic:${TEMP_PASSWORD}" \
   -H "Content-Type: application/json" \
   -d "$(jq -n --arg p "$ES_PASSWORD" '{password: $p}')")
 
