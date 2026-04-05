@@ -83,6 +83,10 @@ resource "google_cloud_run_v2_service" "api" {
         name  = "ENV"
         value = var.env
       }
+			env {
+				name  = "DEBUG"
+				value = var.fast_api_debug_mode
+			}
       env {
         name  = "GCP_PROJECT"
         value = var.project_id

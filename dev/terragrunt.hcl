@@ -31,4 +31,5 @@ inputs = {
   es_vm_machine_type               = "e2-medium"
   encoder_github_branch            = "develop"
   es_drive_type                    = "pd-standard"
+  fast_api_debug_mode              = true
 }

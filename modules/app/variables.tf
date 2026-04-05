@@ -157,3 +157,9 @@ variable "es_drive_type" {
   type    = string
   default = "pd-ssd"
 }
+
+variable "fast_api_debug_mode" {
+  description = "Start the fast api in debug mode. Will explain elasticsearch queries."
+  type    = bool 
+  default = false 
+}
