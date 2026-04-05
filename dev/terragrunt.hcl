@@ -30,4 +30,5 @@ inputs = {
   es_boot_disk_size                = 30
   es_vm_machine_type               = "e2-medium"
   encoder_github_branch            = "develop"
+  es_drive_type                    = "pd-standard"
 }

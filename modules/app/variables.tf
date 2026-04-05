@@ -150,3 +150,10 @@ variable "encoder_github_branch" {
   type        = string
   default     = "main"
 }
+
+variable "es_drive_type" {
+  description = "Drive type. Could be ssd (\"pd-ss\") or hdd (\"pd-standard\"). Defaults to pd-ssd so we don't beak prod."
+
+  type    = string
+  default = "pd-ssd"
+}

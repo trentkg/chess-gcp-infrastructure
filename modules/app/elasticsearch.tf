@@ -19,12 +19,12 @@ resource "google_compute_disk" "es-data" {
   name    = "chess-es-data-${var.env}"
   project = var.project_id
   zone    = var.zone
-  type    = "pd-ssd"
+  type    = var.es_drive_type
   size    = var.es_compute_disk_size
 
   lifecycle {
     prevent_destroy = true
-		ignore_changes  = [snapshot, licenses]
+    ignore_changes  = [snapshot, licenses]
   }
 }
 
