@@ -158,8 +158,8 @@ variable "es_drive_type" {
   default = "pd-ssd"
 }
 
-variable "fast_api_debug_mode" {
-  description = "Start the fast api in debug mode. Will explain elasticsearch queries."
-  type    = bool 
-  default = false 
+variable "debug_mode" {
+  description = "Start the fast api and vite server in debug mode. Will explain elasticsearch queries. Note that the fast api's variable is an env var in cloud run, while the frontend's debug is a build time variable in cloudbuild."
+  type        = bool
+  default     = false
 }

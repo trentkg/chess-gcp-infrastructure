@@ -85,7 +85,7 @@ resource "google_cloud_run_v2_service" "api" {
       }
 			env {
 				name  = "DEBUG"
-				value = var.fast_api_debug_mode
+				value = var.debug_mode
 			}
       env {
         name  = "GCP_PROJECT"
@@ -136,8 +136,6 @@ resource "google_cloud_run_v2_service" "frontend" {
           memory = var.frontend_memory
         }
       }
-
-
 
       env {
         name  = "API_URL"

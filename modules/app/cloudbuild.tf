@@ -93,6 +93,7 @@ resource "google_cloudbuild_trigger" "images" {
     _REGION  = var.region
     _ENV     = var.env
     _API_URL = var.api_url
+    _DEBUG   = var.debug_mode ? "true" : "false"
   }
 
 
