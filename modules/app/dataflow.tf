@@ -22,4 +22,7 @@ resource "google_secret_manager_secret_iam_member" "chess_es_access" {
   secret_id = each.value.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.dataflow_worker.email}"
+	depends_on = [data.google_secret_manager_secrets.chess_es]
+
+	# if more if the for_each variables change in the above, add them here.
 }

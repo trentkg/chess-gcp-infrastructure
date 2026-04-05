@@ -89,7 +89,7 @@ resource "google_cloud_run_v2_service" "api" {
       }
     }
     vpc_access {
-      egress = "ALL_TRAFFIC"
+      egress = "PRIVATE_RANGES_ONLY"   
       network_interfaces {
         network    = google_compute_network.chess.id
         subnetwork = google_compute_subnetwork.chess.id
