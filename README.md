@@ -15,13 +15,16 @@ Puzzle and game data is extracted from external sources, staged in GCP, then tra
 flowchart TD
     EX["Puzzle / Chess Game Extractors"]
     BK[("GCP Bucket")]
-    GT["Apache Beam — Game Transformer\nReads games from bucket,\nsolves, encodes & upserts"]
-    PT["Apache Beam — Puzzle Transformer\nReads puzzles from bucket,\nencodes & upserts"]
+    GL["Apache Beam — Puzzle/Game Loaders\nReads from GCP Bucket,\nwrites raw docs to Elasticsearch"]
     ES[("Elasticsearch VM\npositions-v1 · games-v1")]
+    GT["Apache Beam — Game Transformer\nReads from ES, solves w/ Stockfish,\nencodes & upserts"]
+    PT["Apache Beam — Puzzle Transformer\nReads from ES,\nencodes & upserts"]
 
     EX -->|extract| BK
-    BK -->|load| GT
-    BK -->|load| PT
+    BK -->|load| GL
+    GL -->|write| ES
+    ES -->|read| GT
+    ES -->|read| PT
     GT -->|upsert| ES
     PT -->|upsert| ES
 ```
