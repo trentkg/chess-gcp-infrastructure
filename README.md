@@ -79,7 +79,7 @@ Do you really need to me run `tree` to see this? Cant you just look at the githu
 └── runbooks
     └── es-disk-migration.md
 
-```text
+```
 
 ## Prerequisites
 
