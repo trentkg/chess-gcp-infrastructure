@@ -53,6 +53,8 @@ flowchart TD
 ## Repository Structure
 Do you really need to me run `tree` to see this? Ok I will 
  tree .
+ ```text
+
 .
 ├── CLAUDE.md
 ├── dev
@@ -78,13 +80,13 @@ Do you really need to me run `tree` to see this? Ok I will
 └── runbooks
     └── es-disk-migration.md
 
+```text
 
 ## Prerequisites
 
 - Terraform v1.14.4
 - Terragrunt v0.99.2
-- `packer` >= X.X
-- `gcloud` CLI, authenticated with appropriate permissions
+- `packer` >= v1.15.0
 - GCP project - each environment goes in its own project 
 
 You will need to manually turn on all API/Services after creating a new project. You will also need to manually create a terraform service account. Unless you want to make another terraform project to make this terraform project's SA. But then you'll need another project to make that one's SA account...
@@ -130,3 +132,5 @@ terragrunt state list
 terragrunt taint <resource>
 terragrunt apply
 ```
+### Deploy New Elasticsearch snapshot
+Man are you still reading?? Good for you! Why not read the runbook in runbooks? 
