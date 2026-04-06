@@ -51,11 +51,10 @@ flowchart TD
 
 
 ## Repository Structure
-Do you really need to me run `tree` to see this? Ok I will 
- tree .
- ```text
+Do you really need to me run `tree` to see this? Cant you just look at the github files?? OK fine...
 
-.
+ ```text
+  tree .
 ├── CLAUDE.md
 ├── dev
 │   └── terragrunt.hcl
