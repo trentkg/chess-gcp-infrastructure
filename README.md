@@ -58,29 +58,48 @@ Do you really need to me run `tree` to see this? Cant you just look at the githu
 
  ```text
   tree .
+.
 ├── CLAUDE.md
-├── dev
-│   └── terragrunt.hcl
-├── modules
-│   └── app
+├── elastic-instructions.txt
+├── environments
+│   ├── dev
+│   │   └── terragrunt.hcl
+│   └── prod
+│       ├── app
+│       │   └── terragrunt.hcl
 │       ├── backend.tf
-│       ├── cloudbuild.tf
-│       ├── cloudrun.tf
-│       ├── data.tf
-│       ├── dataflow.tf
-│       ├── elasticsearch.tf
-│       ├── locals.tf
-│       ├── network.tf
+│       ├── load-balancer
+│       │   └── terragrunt.hcl
+│       └── terragrunt.hcl
+├── modules
+│   ├── app
+│   │   ├── backend.tf
+│   │   ├── cloudbuild.tf
+│   │   ├── cloudrun.tf
+│   │   ├── data.tf
+│   │   ├── dataflow.tf
+│   │   ├── elasticsearch.tf
+│   │   ├── locals.tf
+│   │   ├── managed_elasticsearch.tf
+│   │   ├── network.tf
+│   │   ├── outputs.tf
+│   │   ├── provider.tf
+│   │   ├── storage.tf
+│   │   └── variables.tf
+│   └── load-balancer
+│       ├── main.tf
 │       ├── outputs.tf
 │       ├── provider.tf
-│       ├── storage.tf
 │       └── variables.tf
 ├── packer
 │   ├── elasticsearch-dev.pkr.hcl
-│   ├── elasticsearch-prod.pkr.hcl
-│   └── provision.sh
+│   └── elasticsearch-prod.pkr.hcl
+├── README.md
 └── runbooks
-    └── es-disk-migration.md
+    ├── es-disk-migration.md
+    └── es-migration-vm-to-managed.md
+
+11 directories, 29 files
 
 ```
 
