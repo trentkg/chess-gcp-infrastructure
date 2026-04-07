@@ -18,10 +18,6 @@ terraform {
   source = "../../../modules/load-balancer"
 }
 
-terraform {
-  source = "../../../modules/load-balancer"
-}
-
 dependency "app" {
   config_path = "../app"
 }

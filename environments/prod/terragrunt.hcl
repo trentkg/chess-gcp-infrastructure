@@ -13,19 +13,3 @@ remote_state {
     if_exists = "overwrite_terragrunt"
   }
 }
-
-generate "provider" {
-  path      = "providers.tf"
-  if_exists = "overwrite_terragrunt"
-  contents  = <<EOF
-provider "google" {
-  project = "chess-prod-492000"
-  region  = "us-central1"
-}
-
-provider "google-beta" {
-  project = "chess-prod-492000"
-  region  = "us-central1"
-}
-EOF
-}

@@ -83,17 +83,17 @@ resource "google_cloud_run_v2_service" "api" {
         name  = "ENV"
         value = var.env
       }
-			env {
-				name  = "DEBUG"
-				value = var.debug_mode
-			}
+      env {
+        name  = "DEBUG"
+        value = var.debug_mode
+      }
       env {
         name  = "GCP_PROJECT"
         value = var.project_id
       }
     }
     vpc_access {
-      egress = "PRIVATE_RANGES_ONLY"   
+      egress = "PRIVATE_RANGES_ONLY"
       network_interfaces {
         network    = google_compute_network.chess.id
         subnetwork = google_compute_subnetwork.chess.id
