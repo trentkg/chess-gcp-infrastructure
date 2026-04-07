@@ -14,7 +14,7 @@ remote_state {
 }
 
 terraform {
-  source = "../modules/app/"
+  source = "../../../modules/app"
 }
 
 inputs = {

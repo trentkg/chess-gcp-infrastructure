@@ -190,6 +190,11 @@ output "frontend_url" {
   value       = google_cloud_run_v2_service.frontend.uri
 }
 
+output "service_name" {
+  description = "Cloud Run frontend service name for LB module"
+  value       = google_cloud_run_v2_service.frontend.name
+}
+
 output "api_url" {
   description = "URL for the API service"
   value       = google_cloud_run_v2_service.api.uri

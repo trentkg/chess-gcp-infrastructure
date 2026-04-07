@@ -13,8 +13,8 @@ dependency "app" {
 }
 
 inputs = {
-  domain                 = "yourdomain.com"
+  domain                 = "chess-thesaurus.com"
   region                 = "us-central1"
-  project_id             = "your-gcp-project-id"
+  project_id             = "chess-prod-492000"
   cloud_run_service_name = dependency.app.outputs.service_name
 }
