@@ -26,6 +26,6 @@ inputs = {
   name                   = "chess-thesaurus-prod"
   project_id             = "chess-prod-492000"
   region                 = "us-central1"
-  domain                 = "chess-thesaurus.com"
+  domain                 = "www.chess-thesaurus.com"
   cloud_run_service_name = dependency.app.outputs.service_name
 }
