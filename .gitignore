@@ -3,5 +3,7 @@
 *.log
 *cache*
 *terraform.lock.hcl
-dev/*.sh
+environments/prod/*.sh
+environments/dev/*.sh
+
 *.tfplan
