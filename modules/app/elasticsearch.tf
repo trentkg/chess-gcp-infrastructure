@@ -15,6 +15,8 @@ resource "google_project_iam_member" "es_roles" {
   member  = "serviceAccount:${google_service_account.elasticsearch.email}"
 }
 
+# The data disk is NEVER removed by Terraform — prevent_destroy guards it and it serves
+# as a backup even after cutover. Detach / delete it manually once you are confident.
 resource "google_compute_disk" "es-data" {
   name    = "chess-es-data-${var.env}"
   project = var.project_id
@@ -28,7 +30,14 @@ resource "google_compute_disk" "es-data" {
   }
 }
 
+# VM is destroyed only after both flags are true (use_managed AND cutover).
+# During the parallel-run phase (use_managed=true, cutover=false) the VM keeps serving traffic.
+locals {
+  cutover_complete = var.use_managed_elasticsearch && var.cutover_to_managed_elasticsearch
+}
+
 resource "google_compute_instance" "elasticsearch" {
+  count        = local.cutover_complete ? 0 : 1
   name         = "chess-elasticsearch-${var.env}"
   project      = var.project_id
   zone         = var.zone
@@ -83,12 +92,13 @@ resource "google_compute_instance" "elasticsearch" {
   allow_stopping_for_update = true
 
   lifecycle {
-    # Manage status in the terminal to save costs 
+    # Manage status in the terminal to save costs
     ignore_changes = [desired_status]
   }
 }
 
 resource "random_password" "es_password" {
+  count            = local.cutover_complete ? 0 : 1
   length           = 32
   special          = true
   override_special = "!#%&*-_=+?"
@@ -109,8 +119,9 @@ resource "google_secret_manager_secret" "es_password" {
 }
 
 resource "google_secret_manager_secret_version" "es_password" {
+  count       = local.cutover_complete ? 0 : 1
   secret      = google_secret_manager_secret.es_password.id
-  secret_data = random_password.es_password.result
+  secret_data = random_password.es_password[0].result
 }
 
 resource "google_secret_manager_secret" "es_host" {
@@ -122,10 +133,10 @@ resource "google_secret_manager_secret" "es_host" {
 }
 
 resource "google_secret_manager_secret_version" "es_host" {
+  count  = local.cutover_complete ? 0 : 1
   secret = google_secret_manager_secret.es_host.id
   # change to https if using ssl
-  secret_data = "http://${google_compute_instance.elasticsearch.network_interface[0].network_ip}:${var.es_port}"
-
+  secret_data = "http://${google_compute_instance.elasticsearch[0].network_interface[0].network_ip}:${var.es_port}"
 }
 
 resource "google_secret_manager_secret" "es_ca_cert" {

@@ -1,0 +1,63 @@
+  ---
+  Code changes (no apply)
+
+  The single use_managed_elasticsearch flag has been replaced with two:
+
+  ┌────────────────┬───────────────────────────┬──────────────────────────────────┬───────────────────────────────────────────────────────────────────┐
+  │     Stage      │ use_managed_elasticsearch │ cutover_to_managed_elasticsearch │                           What happens                            │
+  ├────────────────┼───────────────────────────┼──────────────────────────────────┼───────────────────────────────────────────────────────────────────┤
+  │ Now / dev      │ false                     │ false                            │ VM only, unchanged                                                │
+  ├────────────────┼───────────────────────────┼──────────────────────────────────┼───────────────────────────────────────────────────────────────────┤
+  │ Create cluster │ true                      │ false                            │ ec_deployment created; VM keeps serving; secrets untouched        │
+  ├────────────────┼───────────────────────────┼──────────────────────────────────┼───────────────────────────────────────────────────────────────────┤
+  │ Cutover        │ true                      │ true                             │ Secrets flipped to managed endpoint; VM destroyed; disk preserved │
+  └────────────────┴───────────────────────────┴──────────────────────────────────┴───────────────────────────────────────────────────────────────────┘
+
+  Key design decisions:
+  - The data disk has no count — it always exists in Terraform. prevent_destroy = true still blocks accidental deletion. You delete it manually after you're confident.
+  - The local.cutover_complete local (defined in elasticsearch.tf) is the single expression both files use, so the logic stays in one place.
+  - The managed cluster credentials are outputs (managed_es_endpoint, managed_es_password) so you can interact with the cluster during the parallel-run phase before any secrets are changed.
+  - Rollback is clean — flip both flags to false, apply, force a new Cloud Run revision. The disk never left.
+
+  Runbook (runbooks/es-migration-vm-to-managed.md) covers:
+  1. Creating the snapshot bucket and granting the VM's SA access
+  2. Registering a GCS snapshot repo on the running VM and taking an ES-level snapshot
+  3. Creating a separate read-only SA key for Elastic Cloud to access the GCS bucket (EC can't use ADC since it runs outside GCP)
+  4. Restoring the snapshot to the managed cluster and verifying
+  5. The cutover apply + forced Cloud Run revision (~5-15 min downtime)
+  6. Cleanup steps + full rollback instructions
+
+                                                                                                             
+⏺ZTurning managed Elasticsearch on (prod)                                                                                                                                                              
+                                                                                                                                                                                                      
+  Step 1 — Create the cluster (no downtime)                                                                                                                                                             
+                                                                                                                                                                                                        
+  In prod/terragrunt.hcl, set:                                                                                                                                                                          
+  use_managed_elasticsearch        = true                                                                                                                                                               
+  cutover_to_managed_elasticsearch = false                                                                                                                                                              
+  Make sure EC_API_KEY is set in prod/env-vars.sh, then:    
+  cd prod && source env-vars.sh && ./plan.sh && ./apply.sh
+  The managed cluster is created. Your VM keeps running and serving all traffic. Follow the runbook (runbooks/es-migration-vm-to-managed.md) to load your snapshot data and verify the cluster.         
+                                                                                                                                                                                               
+  Step 2 — Cut over traffic (~5–15 min downtime)                                                                                                                                                        
+                                                                                                                                                                                                        
+  Once data is verified, in prod/terragrunt.hcl set:                                                                                                                                                    
+  use_managed_elasticsearch        = true                                                                                                                                                               
+  cutover_to_managed_elasticsearch = true                                                                                                                                                               
+  Then:                                                     
+  ./plan.sh && ./apply.sh
+  Then force Cloud Run to pick up the new secrets:
+  gcloud run services update chess-api-prod --region=us-central1 --project=chess-prod-492000 --update-labels=es-cutover=$(date +%s)
+  The VM is destroyed. The data disk is kept. Traffic now hits Elastic Cloud.                                                                                                                           
+   
+  ---                                                                                                                                                                                                   
+  Turning it off (rollback)                                 
+                                                                                                                                                                                                        
+  In prod/terragrunt.hcl, set both flags back to false:     
+  use_managed_elasticsearch        = false
+  cutover_to_managed_elasticsearch = false
+  Then:                                                                                                                                                                                                 
+  ./plan.sh && ./apply.sh
+  gcloud run services update chess-api-prod --region=us-central1 --project=chess-prod-492000 --update-labels=es-cutover=$(date +%s)                                                                     
+  This recreates the VM (reattaching the preserved data disk) and flips the secrets back. The managed Elastic Cloud cluster is not automatically deleted — if you want to stop being billed for it,
+  delete it separately in the Elastic Cloud console or by destroying it via Terraform while use_managed_elasticsearch = true.                                                                           
