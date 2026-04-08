@@ -32,6 +32,5 @@ inputs = {
   encoder_github_branch            = "develop"
   es_drive_type                    = "pd-standard"
   debug_mode                       = true
-  use_managed_elasticsearch        = false
   cutover_to_managed_elasticsearch = false
 }

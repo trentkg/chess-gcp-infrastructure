@@ -6,6 +6,22 @@ output "es_secret_name" {
   description = "Secret Manager secret ID for the ES password"
   value       = google_secret_manager_secret.es_password.secret_id
 }
+
+# Full resource IDs consumed by the serverless-elasticsearch module to write secret versions.
+output "es_host_secret_id" {
+  description = "Full Secret Manager resource ID for the ES host secret"
+  value       = google_secret_manager_secret.es_host.id
+}
+
+output "es_password_secret_id" {
+  description = "Full Secret Manager resource ID for the ES password secret"
+  value       = google_secret_manager_secret.es_password.id
+}
+
+output "es_user_secret_id" {
+  description = "Full Secret Manager resource ID for the ES username secret"
+  value       = google_secret_manager_secret.es_user.id
+}
 output "iap_tunnel_command" {
   description = "Tunnel to ES locally for debugging (VM mode only)"
   value       = local.cutover_complete ? "N/A — cutover to managed Elasticsearch complete" : "gcloud compute start-iap-tunnel chess-elasticsearch-${var.env} 9200 --local-host-port=localhost:9200 --zone=${var.zone} --project=${var.project_id}"

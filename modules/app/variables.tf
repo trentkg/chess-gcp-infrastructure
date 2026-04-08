@@ -164,27 +164,8 @@ variable "debug_mode" {
   default     = false
 }
 
-variable "use_managed_elasticsearch" {
-  description = "If true, provision a managed Elasticsearch cluster via Elastic Cloud. The VM stays running until cutover_to_managed_elasticsearch is also true."
-  type        = bool
-  default     = false
-}
-
 variable "cutover_to_managed_elasticsearch" {
-  description = "If true (and use_managed_elasticsearch is also true), flip the shared ES secrets to point at the managed cluster and destroy the VM. The data disk is always preserved. Only set this after verifying the managed cluster is healthy and data is restored."
+  description = "When true, the VM is destroyed and VM-mode secret versions are removed. Set this only after the serverless-elasticsearch module has written the new secrets and Cloud Run has been redeployed against them."
   type        = bool
   default     = false
-}
-
-variable "elastic_cloud_api_key" {
-  description = "Elastic Cloud API key. Required (and must be a real key) when use_managed_elasticsearch = true. A placeholder value is acceptable when use_managed_elasticsearch = false; no API calls are made in that case."
-  type        = string
-  sensitive   = true
-  default     = "not-used"
-}
-
-variable "elastic_cloud_elasticsearch_size" {
-  description = "Memory size for the managed Elasticsearch hot tier (e.g. '2g', '4g', '8g'). Only used when use_managed_elasticsearch = true."
-  type        = string
-  default     = "4g"
 }

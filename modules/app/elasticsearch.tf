@@ -30,10 +30,10 @@ resource "google_compute_disk" "es-data" {
   }
 }
 
-# VM is destroyed only after both flags are true (use_managed AND cutover).
-# During the parallel-run phase (use_managed=true, cutover=false) the VM keeps serving traffic.
+# VM is destroyed and VM-mode secrets are removed when cutover is true.
+# The serverless-elasticsearch module writes the new secrets before this is set.
 locals {
-  cutover_complete = var.use_managed_elasticsearch && var.cutover_to_managed_elasticsearch
+  cutover_complete = var.cutover_to_managed_elasticsearch
 }
 
 resource "google_compute_instance" "elasticsearch" {
