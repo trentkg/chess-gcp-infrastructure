@@ -10,14 +10,16 @@ output "kibana_endpoint" {
 
 output "elasticsearch_username" {
   description = "Basic auth username (only populated in state after first apply)"
-  value       = ec_elasticsearch_project.this.credentials.username
+  value     = try(ec_elasticsearch_project.this.credentials.username, null)
+  sensitive = true
 }
 
 output "elasticsearch_password" {
   description = "Basic auth password (only populated in state after first apply)"
-  value       = ec_elasticsearch_project.this.credentials.password
-  sensitive   = true
+  value     = try(ec_elasticsearch_project.this.credentials.password, null)
+  sensitive = true
 }
+
 
 output "cloud_id" {
   description = "Elastic Cloud ID (for use with Elastic SDKs and Beats)"

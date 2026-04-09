@@ -169,3 +169,9 @@ variable "cutover_to_managed_elasticsearch" {
   type        = bool
   default     = false
 }
+
+variable "elasticsearch_ca_certs_path" {
+  description = "Path to CA bundle for ES TLS verification. Null disables cert verification, such as in dev."
+  type        = string
+  default     = null
+}

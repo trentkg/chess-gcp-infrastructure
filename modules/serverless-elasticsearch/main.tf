@@ -4,18 +4,11 @@
 # IMPORTANT — credentials behaviour:
 #   The elastic/ec provider only returns credentials.username and credentials.password on
 #   the *first* apply (when the project is created). Subsequent API reads return empty
-#   values. `lifecycle { ignore_changes = [credentials] }` keeps the initial credentials
-#   in Terraform state so downstream secret versions can reference them.
-#   If you ever destroy and recreate this resource, re-apply with cutover = false first
-#   to let Terraform capture the new credentials, then re-apply with cutover = true.
+#   values. 
 
 resource "ec_elasticsearch_project" "this" {
   name      = "chess-elasticsearch-${var.env}"
   region_id = "gcp-us-central1"
-
-  lifecycle {
-    ignore_changes = [credentials]
-  }
 }
 
 # Secret versions below are only written during cutover.

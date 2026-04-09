@@ -56,6 +56,13 @@ resource "google_cloud_run_v2_service" "api" {
           memory = var.api_memory
         }
       }
+      dynamic "env" {
+        for_each = var.elasticsearch_ca_certs_path != null ? [1] : []
+        content {
+          name  = "ES_CA_CERTS_PATH"
+          value = var.elasticsearch_ca_certs_path
+        }
+      }
 
       env {
         name = "ES_HOST"

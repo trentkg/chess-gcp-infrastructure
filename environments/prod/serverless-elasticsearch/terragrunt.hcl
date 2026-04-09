@@ -28,14 +28,10 @@ inputs = {
   project_id            = "chess-prod-492000"
   env                   = "prod"
   elastic_cloud_api_key = local.elastic_cloud_api_key
-
-  # Secret resource IDs sourced from the app module so this module can write new versions
-  # at cutover time without owning the secret containers themselves.
   es_host_secret_id     = dependency.app.outputs.es_host_secret_id
   es_password_secret_id = dependency.app.outputs.es_password_secret_id
   es_user_secret_id     = dependency.app.outputs.es_user_secret_id
 
-  # Step 1: apply with false to create the cluster and load data (see runbook).
-  # Step 2: apply with true to flip secrets and complete the cutover.
-  cutover_to_managed_elasticsearch = false
+  cutover_to_managed_elasticsearch = true
+  elasticsearch_ca_certs_path = "/etc/ssl/certs/ca-certificates.crt"
 }

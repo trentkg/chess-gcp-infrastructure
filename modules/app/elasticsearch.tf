@@ -15,9 +15,15 @@ resource "google_project_iam_member" "es_roles" {
   member  = "serviceAccount:${google_service_account.elasticsearch.email}"
 }
 
+locals {
+  cutover_complete = var.cutover_to_managed_elasticsearch
+}
+
 # The data disk is NEVER removed by Terraform — prevent_destroy guards it and it serves
 # as a backup even after cutover. Detach / delete it manually once you are confident.
 resource "google_compute_disk" "es-data" {
+  count = local.cutover_complete ? 0 : 1
+
   name    = "chess-es-data-${var.env}"
   project = var.project_id
   zone    = var.zone
@@ -32,9 +38,7 @@ resource "google_compute_disk" "es-data" {
 
 # VM is destroyed and VM-mode secrets are removed when cutover is true.
 # The serverless-elasticsearch module writes the new secrets before this is set.
-locals {
-  cutover_complete = var.cutover_to_managed_elasticsearch
-}
+
 
 resource "google_compute_instance" "elasticsearch" {
   count        = local.cutover_complete ? 0 : 1
@@ -58,7 +62,7 @@ resource "google_compute_instance" "elasticsearch" {
   }
 
   attached_disk {
-    source      = google_compute_disk.es-data.self_link
+    source      = google_compute_disk.es-data[count.index].self_link
     device_name = "es-data"
   }
 
