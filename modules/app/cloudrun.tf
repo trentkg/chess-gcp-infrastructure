@@ -16,19 +16,26 @@ resource "google_service_account" "frontend" {
 # -----------------------------------------------------------------------
 # Grant API SA access to ES secrets
 # -----------------------------------------------------------------------
-resource "google_secret_manager_secret_iam_member" "api_secret_access" {
-  for_each = toset([
-    google_secret_manager_secret.es_host.secret_id,
-    google_secret_manager_secret.es_password.secret_id,
-    google_secret_manager_secret.es_user.secret_id,
-  ])
+resource "google_secret_manager_secret_iam_member" "api_es_host_secret_access" {
   project   = var.project_id
-  secret_id = each.value
+  secret_id = google_secret_manager_secret.es_host.name
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.api.email}"
 }
 
+resource "google_secret_manager_secret_iam_member" "api_es_password_secret_access" {
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.es_password.name
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.api.email}"
+}
 
+resource "google_secret_manager_secret_iam_member" "api_es_user_secret_access" {
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.es_user.name
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.api.email}"
+}
 
 # -----------------------------------------------------------------------
 # FastAPI service
